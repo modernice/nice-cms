@@ -85,6 +85,9 @@ type imageService struct {
 	storage Storage
 }
 
+// NewImageService creates the ImageService that uses the provided Storage
+// to store the images and the provided ImageRepository to store the
+// corresponding image metadata.
 func NewImageService(repo ImageRepository, storage Storage) ImageService {
 	return &imageService{
 		repo:    repo,
