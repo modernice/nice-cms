@@ -42,7 +42,7 @@ func (r *images) Get(ctx context.Context, disk, path string) (media.Image, error
 	var img media.Image
 	if err := res.Decode(&img); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return media.Image{}, media.ErrUnknownImage
+			return media.Image{}, image.ErrUnknownImage
 		}
 		return img, fmt.Errorf("decode image: %w", err)
 	}
