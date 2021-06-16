@@ -1,11 +1,11 @@
-package media_test
+package image_test
 
 import (
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"image"
+	stdimage "image"
 	"image/color"
 	"image/png"
 	"reflect"
@@ -13,6 +13,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/modernice/cms/media"
+	"github.com/modernice/cms/media/image"
+	"github.com/modernice/cms/media/image/mock_image"
 	"github.com/modernice/cms/media/mock_media"
 )
 
@@ -27,10 +29,10 @@ func TestImageService_Upload(t *testing.T) {
 	defer ctrl.Finish()
 
 	disk := mock_media.NewMockStorageDisk(ctrl)
-	repo := mock_media.NewMockImageRepository(ctrl)
+	repo := mock_image.NewMockRepository(ctrl)
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
 
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	width := 200
 	height := 100
@@ -82,10 +84,10 @@ func TestImageService_Upload_rollbackOnRepositoryError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	repo := mock_media.NewMockImageRepository(ctrl)
+	repo := mock_image.NewMockRepository(ctrl)
 	disk := mock_media.NewMockStorageDisk(ctrl)
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	disk.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
@@ -103,10 +105,10 @@ func TestImageService_Upload_rollbackOnRepositoryError(t *testing.T) {
 }
 
 func TestImageService_Download_errFileNotFound(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	img, err := svc.Download(context.Background(), exampleImageDiskName, exampleImagePath)
 	if !errors.Is(err, media.ErrFileNotFound) {
@@ -119,10 +121,10 @@ func TestImageService_Download_errFileNotFound(t *testing.T) {
 }
 
 func TestImageService_Download(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	img := coloredRectangleBuffer(400, 200, color.RGBA{200, 20, 80, 0xff})
 	b := img.Bytes()
@@ -136,7 +138,7 @@ func TestImageService_Download(t *testing.T) {
 		t.Fatalf("Download shouldn't fail for an existing file; failed with %q", err)
 	}
 
-	originalImage, _, err := image.Decode(bytes.NewReader(b))
+	originalImage, _, err := stdimage.Decode(bytes.NewReader(b))
 	if err != nil {
 		t.Fatalf("failed to decode original image: %v", err)
 	}
@@ -145,10 +147,10 @@ func TestImageService_Download(t *testing.T) {
 }
 
 func TestImageService_Replace(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	img := coloredRectangleBuffer(400, 200, color.RGBA{200, 20, 80, 0xff})
 
@@ -179,10 +181,10 @@ func TestImageService_Replace(t *testing.T) {
 }
 
 func TestImageService_Rename(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	img := coloredRectangleBuffer(400, 200, color.RGBA{100, 100, 100, 0xff})
 
@@ -215,21 +217,21 @@ func TestImageService_Rename(t *testing.T) {
 }
 
 func TestImageService_Delete_errUnknownImage(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
-	if err := svc.Delete(context.Background(), exampleImageDiskName, exampleImagePath); !errors.Is(err, media.ErrUnknownImage) {
-		t.Fatalf("deleting an unknown image should fail with %q; got %q", media.ErrUnknownImage, err)
+	if err := svc.Delete(context.Background(), exampleImageDiskName, exampleImagePath); !errors.Is(err, image.ErrUnknownImage) {
+		t.Fatalf("deleting an unknown image should fail with %q; got %q", image.ErrUnknownImage, err)
 	}
 }
 
 func TestImageService_Delete(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	img := coloredRectangleBuffer(400, 200, color.RGBA{100, 100, 100, 0xff})
 
@@ -242,8 +244,8 @@ func TestImageService_Delete(t *testing.T) {
 		t.Fatalf("deleting an existing image shouldn't fail; failed with %q", err)
 	}
 
-	if _, err := repo.Get(context.Background(), uploadedImage.Disk, uploadedImage.Path); !errors.Is(err, media.ErrUnknownImage) {
-		t.Fatalf("ImageRepository.Get should return %q for a deleted image; got %q", media.ErrUnknownImage, err)
+	if _, err := repo.Get(context.Background(), uploadedImage.Disk, uploadedImage.Path); !errors.Is(err, image.ErrUnknownImage) {
+		t.Fatalf("ImageRepository.Get should return %q for a deleted image; got %q", image.ErrUnknownImage, err)
 	}
 
 	d, err := storage.Disk(uploadedImage.Disk)
@@ -257,21 +259,21 @@ func TestImageService_Delete(t *testing.T) {
 }
 
 func TestImageService_Tag_errUnknownImage(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
-	if _, err := svc.Tag(context.Background(), exampleImageDiskName, exampleImagePath, "foo", "bar", "baz"); !errors.Is(err, media.ErrUnknownImage) {
-		t.Fatalf("tagging a non-existent image should fail with %q; got %q", media.ErrUnknownImage, err)
+	if _, err := svc.Tag(context.Background(), exampleImageDiskName, exampleImagePath, "foo", "bar", "baz"); !errors.Is(err, image.ErrUnknownImage) {
+		t.Fatalf("tagging a non-existent image should fail with %q; got %q", image.ErrUnknownImage, err)
 	}
 }
 
 func TestImageService_Tag(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	img := coloredRectangleBuffer(400, 200, color.RGBA{100, 100, 100, 0xff})
 
@@ -302,10 +304,10 @@ func TestImageService_Tag(t *testing.T) {
 }
 
 func TestImageService_Untag(t *testing.T) {
-	repo := media.MemoryImageRepository()
+	repo := image.InMemoryRepository()
 	disk := media.MemoryDisk()
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
-	svc := media.NewImageService(repo, storage)
+	svc := image.NewService(repo, storage)
 
 	img := coloredRectangleBuffer(400, 200, color.RGBA{100, 100, 100, 0xff})
 
@@ -340,8 +342,8 @@ func TestImageService_Untag(t *testing.T) {
 	}
 }
 
-func coloredRectangle(width, height int, color color.Color) image.Image {
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
+func coloredRectangle(width, height int, color color.Color) stdimage.Image {
+	img := stdimage.NewRGBA(stdimage.Rect(0, 0, width, height))
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			img.Set(x, y, color)
@@ -359,7 +361,7 @@ func coloredRectangleBuffer(width, height int, color color.Color) *bytes.Buffer 
 	return &buf
 }
 
-func assertEqualImages(t *testing.T, images ...image.Image) {
+func assertEqualImages(t *testing.T, images ...stdimage.Image) {
 	if len(images) < 2 {
 		return
 	}

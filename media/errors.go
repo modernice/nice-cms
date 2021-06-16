@@ -10,9 +10,10 @@ var (
 	// ErrFileNotFound is returned when a file cannot be found in a Storage.
 	ErrFileNotFound = errors.New("file not found")
 
-	// ErrUnknownImage is returned when an image does not exist in the ImageRepository.
-	ErrUnknownImage = errors.New("unknown image")
-
 	// ErrUploadFailed is returned when an upload of a file fails.
 	ErrUploadFailed = errors.New("upload failed")
+
+	// ErrEmptyName is returned when providing an empty string as a name.
+	// Whitespce-only strings count as empty.
+	ErrEmptyName = errors.New("empty name")
 )

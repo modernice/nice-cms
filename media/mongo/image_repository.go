@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/modernice/cms/media"
+	"github.com/modernice/cms/media/image"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,7 +15,7 @@ import (
 type images struct{ col *mongo.Collection }
 
 // Images returns the mongodb implementation of media.ImageRepository.
-func Images(ctx context.Context, col *mongo.Collection) (media.ImageRepository, error) {
+func Images(ctx context.Context, col *mongo.Collection) (image.Repository, error) {
 	r := &images{col: col}
 	if err := r.createIndexes(ctx); err != nil {
 		return r, fmt.Errorf("create indexes: %w", err)
