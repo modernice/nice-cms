@@ -67,7 +67,22 @@ All asset types must be taggable with arbitrary,
 GCS, AWS, Azure & filesystem storage implementations should be provided together
 with their corresponding CDN implementations.
 
+## [Galleries](./galleries.md)
+
+End-users should access and manage images through a gallery. Galleries provide
+some additional features around simple image uploads like image processing.
+
 ## Code examples
+
+### Setup image service
+
+```go
+package example
+
+func NewImageService(images image.Repository, storage media.Storage) *image.Service {
+  return image.NewService(images, storage)
+}
+```
 
 ### Setup media server
 
@@ -75,9 +90,9 @@ with their corresponding CDN implementations.
 package example
 
 func NewMediaServer() http.Handler {
-  images := media.NewImageService(...)
-  videos := media.NewVideoService(...)
-  docs := media.NewDocumentService(...)
+  images := image.NewService(...)
+  videos := video.NewService(...)
+  docs := document.NewService(...)
 
   return media.NewHTTPServer(
     media.WithImageService(images),
