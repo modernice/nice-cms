@@ -27,6 +27,8 @@ func NewCustomBlog(posts blog.PostRepository) *blog.Blog {
 
 		blog.WithAuthors(), // add author information to posts
 
+		blog.Localized("de", "en", "fr"), // add localization
+
 		blog.WithField( // add custom fields to posts
 			field.NewToggle("featured", func(f *field.Toggle) bool {
 				return false

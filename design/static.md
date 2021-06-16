@@ -32,18 +32,18 @@ func NewStaticPages() static.Pages {
 		static.NewPage("contact", static.WithField(
 			field.NewText("contactEmail", func(f *field.Text) string {
 				return "hello@example.com"
-			}),
+			}, field.Localized()),
 
-			field.NewLocalizedText("contactPhone", func(f *field.LocalizedText) string {
+			field.NewText("contactPhone", func(f *field.Text) string {
 				switch f.Locale {
 				case "en":
 					return "+1 234 567 890"
 				default:
 					return "+49 234 567 890"
 				}
-			}),
+			}, field.Localized()),
 
-			field.NewLocalizedMeta("meta", func(f *field.LocalizedMeta) meta.Data {
+			field.NewMeta("meta", func(f *field.Meta) meta.Data {
 				switch f.Locale {
 				case "de":
 					return meta.Data{
@@ -56,7 +56,7 @@ func NewStaticPages() static.Pages {
 						Description: "Let's get in touch.",
 					}
 				}
-			}),
+			}, field.Localized()),
 		)),
 
 		static.NewPage("legal", static.WithField(
@@ -155,16 +155,18 @@ const schema = definePage(
 
 	textField('contactEmail', 'hello@example.com'),
 
-	localizedTextField('contactPhone', field => {
+	textField('contactPhone', field => {
 		switch (field.locale) {
 		case 'de':
 			return '+49 123 456 789'
 		default:
 			return '+1 234 567 890'
 		}
+	}, {
+		localized: true,
 	}),
 
-	localizedMetaField('meta', field => {
+	metaField('meta', field => {
 		switch (field.locale) {
 		case 'de':
 			return {
@@ -177,6 +179,8 @@ const schema = definePage(
 				description: 'Get in touch.',
 			}
 		}
+	}, {
+		localized: true,
 	}),
 )
 

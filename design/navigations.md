@@ -55,7 +55,7 @@ func NewNavigations(blog *blog.Blog) static.Navigations {
           default:
             return "Contact"
           }
-        }),
+        }, nav.WithFieldOptions(field.Localized())),
 
         nav.NewStaticLink("about", func(l *nav.StaticLink) string {
           return "About"
@@ -70,7 +70,7 @@ func NewNavigations(blog *blog.Blog) static.Navigations {
               }
             }),
           }
-        })),
+        }, nav.WithFieldOptions(field.Localized()))),
 
         nav.NewStaticLink("pricing", func(l *nav.StaticLink) string {
           switch l.Locale {
@@ -79,7 +79,7 @@ func NewNavigations(blog *blog.Blog) static.Navigations {
           default:
             return "Pricing"
           }
-        }),
+        }, nav.WithFieldOptions(field.Localized())),
 
         nav.NewBlogLink(blog, "post-id", func(l *nav.BlogLink) string {
           return l.Post.Field("shortTitle").Localize(l.Locale)
@@ -92,7 +92,7 @@ func NewNavigations(blog *blog.Blog) static.Navigations {
           default:
             return "Unclickable!"
           }
-        }),
+        }, nav.WithFieldOptions(field.Localized())),
       }
     }),
 
@@ -105,7 +105,7 @@ func NewNavigations(blog *blog.Blog) static.Navigations {
           default:
             return "Legal"
           }
-        }),
+        }, nav.WithFieldOptions(field.Localized())),
       }
     })
   }
@@ -117,5 +117,35 @@ package example
 
 func NewPageServer(pages static.Pages, navs static.Navigations) http.Handler {
   return static.NewHTTPServer(pages, static.WithNavigations(navs))
+}
+```
+
+## Frontend tooling
+
+```ts
+import { connect, StaticLink, NavigationTree } from '@nice-cms/static'
+
+const static = await connect('http://localhost:8000')
+
+const mainNav = await static.navigations.fetch('main')
+
+console.log('Fetched "main" navigation.\n')
+
+printItems(mainNav)
+
+function printItems(nav: NavigationTree, indent = 0) {
+  const spaces = new Array(indent).fill(' ')
+
+  for (const item of mainNav.items) {
+    console.log(spaces)
+    console.log(`${spaces}Navigation item: ${item.label}`)
+    if (item.link) {
+      console.log(`${spaces}Item links to: ${item.link.path} (${item.link.type})`)
+    }
+    if (item.tree) {
+      console.log(`${spaces}Item has sub-tree:`)
+      printItems(item.tree, indent+4)
+    }
+  }
 }
 ```
