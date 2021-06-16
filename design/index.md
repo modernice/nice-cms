@@ -74,6 +74,6 @@ or deployment method.
 - [Media](./media.md)
 - [Navigations](./navigations.md)
 - [Static web pages](./static.md)
-- [Blog](./blog.md)
+- [Blogs](./blogs.md)
 - [Reviews](./reviews.md)
 - [API](./api.md)
