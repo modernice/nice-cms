@@ -3,8 +3,8 @@
 ## Introduction
 
 Navigations are typically hard-coded into the code of a website. In order for
-website owners to be able to change navigation trees, there needs to be a
-unified way for both developers and website owners to manage navigations.
+website owners to be able to edit navigation trees, there needs to be a unified
+way for both developers and website owners to manage navigations.
 
 ## Design
 
@@ -39,4 +39,83 @@ When a developer builds a website, they most likely want to hard-code the
 initial navigation trees. Forcing developers to create navigations through an
 admin UI would reduce development experience, so developers must be able to
 hard-code the initial navigations through code, while allowing website owners to
-update those navigation trees if they need to.
+update those navigation trees within an admin UI if they need to.
+
+```go
+package example
+
+func NewNavigations(blog *blog.Blog) static.Navigations {
+  return static.Navigations{
+    nav.NewTree("main", func(nav *nav.Tree) nav.Items {
+      return nav.Items{
+        nav.NewStaticLink("contact", func(l *nav.StaticLink) string {
+          switch l.Locale {
+          case "de":
+            return "Kontakt"
+          default:
+            return "Contact"
+          }
+        }),
+
+        nav.NewStaticLink("about", func(l *nav.StaticLink) string {
+          return "About"
+        }, nav.WithSubNav(nav.NewSubTree(func(nav *nav.Tree) nav.Items {
+          return nav.Items{
+            nav.NewStaticLink("legal", func(l *nav.StaticLink) string {
+              switch l.Locale {
+              case "de":
+                return "Impressum"
+              default:
+                return "Legal"
+              }
+            }),
+          }
+        })),
+
+        nav.NewStaticLink("pricing", func(l *nav.StaticLink) string {
+          switch l.Locale {
+          case "de":
+            return "Preise"
+          default:
+            return "Pricing"
+          }
+        }),
+
+        nav.NewBlogLink(blog, "post-id", func(l *nav.BlogLink) string {
+          return l.Post.Field("shortTitle").Localize(l.Locale)
+        }),
+
+        nav.NewLabel(func(l *nav.Label) string {
+          switch l.Locale {
+          case "de":
+            return "Nicht klickbar!"
+          default:
+            return "Unclickable!"
+          }
+        }),
+      }
+    }),
+
+    nav.NewTree("footer", func(nav *nav.Tree) nav.Items {
+      return nav.Items{
+        nav.NewStaticLink("legal", func(l *nav.StaticLink) string {
+          switch l.Locale {
+          case "de":
+            return "Impressum"
+          default:
+            return "Legal"
+          }
+        }),
+      }
+    })
+  }
+}
+```
+
+```go
+package example
+
+func NewPageServer(pages static.Pages, navs static.Navigations) http.Handler {
+  return static.NewHTTPServer(pages, static.WithNavigations(navs))
+}
+```
