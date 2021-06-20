@@ -14,7 +14,7 @@ import (
 
 type images struct{ col *mongo.Collection }
 
-// Images returns the mongodb implementation of media.ImageRepository.
+// Images returns the MongoDB implementation of image.Repository.
 func Images(ctx context.Context, col *mongo.Collection) (image.Repository, error) {
 	r := &images{col: col}
 	if err := r.createIndexes(ctx); err != nil {

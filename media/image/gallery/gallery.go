@@ -190,9 +190,9 @@ func (g *Gallery) process(stack Stack, out chan<- error) {
 	}
 }
 
-// Get returns the Stack with the given UUID or ErrStackNotFound if the Stack
+// Stack returns the Stack with the given UUID or ErrStackNotFound if the Stack
 // does not exist in the StackRepository.
-func (g *Gallery) Get(ctx context.Context, id uuid.UUID) (Stack, error) {
+func (g *Gallery) Stack(ctx context.Context, id uuid.UUID) (Stack, error) {
 	return g.stacks.Get(ctx, id)
 }
 

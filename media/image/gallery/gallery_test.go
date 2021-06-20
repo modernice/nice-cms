@@ -192,7 +192,7 @@ func TestGallery_Get(t *testing.T) {
 		t.Fatalf("upload failed: %v", err)
 	}
 
-	stack, err := g.Get(context.Background(), uploaded.ID)
+	stack, err := g.Stack(context.Background(), uploaded.ID)
 	if err != nil {
 		t.Fatalf("Get should return the uploaded Stack; failed with %q", err)
 	}
@@ -222,7 +222,7 @@ func TestGallery_Delete(t *testing.T) {
 		t.Fatalf("deleting an existing Stack shouldn't fail; failed with %q", err)
 	}
 
-	if _, err := g.Get(context.Background(), uploaded.ID); !errors.Is(err, gallery.ErrStackNotFound) {
+	if _, err := g.Stack(context.Background(), uploaded.ID); !errors.Is(err, gallery.ErrStackNotFound) {
 		t.Fatalf("Get should return %q for a deleted Stack; got %q", gallery.ErrStackNotFound, err)
 	}
 
@@ -264,7 +264,7 @@ func TestGallery_Delete_failingImageService(t *testing.T) {
 		t.Fatalf("Delete should continue executing when the ImageService fails to delete images; got %q", err)
 	}
 
-	if _, err := g.Get(context.Background(), uploaded.ID); !errors.Is(err, gallery.ErrStackNotFound) {
+	if _, err := g.Stack(context.Background(), uploaded.ID); !errors.Is(err, gallery.ErrStackNotFound) {
 		t.Fatalf("Get should return %q for a deleted Stack; got %q", gallery.ErrStackNotFound, err)
 	}
 }
