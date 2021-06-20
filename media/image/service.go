@@ -106,23 +106,23 @@ func (svc *imageService) rollbackUpload(ctx context.Context, img media.Image) er
 	return nil
 }
 
-func (svc *imageService) Download(ctx context.Context, diskName, path string) (image.Image, error) {
+func (svc *imageService) Download(ctx context.Context, diskName, path string) (image.Image, string, error) {
 	disk, err := svc.disk(diskName)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	b, err := disk.Get(ctx, path)
 	if err != nil {
-		return nil, fmt.Errorf("get storage file %q (%s): %w", path, diskName, err)
+		return nil, "", fmt.Errorf("get storage file %q (%s): %w", path, diskName, err)
 	}
 
-	img, _, err := image.Decode(bytes.NewReader(b))
+	img, format, err := image.Decode(bytes.NewReader(b))
 	if err != nil {
-		return nil, fmt.Errorf("decode image: %w", err)
+		return nil, "", fmt.Errorf("decode image: %w", err)
 	}
 
-	return img, nil
+	return img, format, nil
 }
 
 func (svc *imageService) Replace(ctx context.Context, r io.Reader, diskName, path string) (media.Image, error) {

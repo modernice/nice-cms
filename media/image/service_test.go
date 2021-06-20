@@ -67,8 +67,8 @@ func TestImageService_Upload(t *testing.T) {
 		t.Fatalf("name of uploaded image should be %q; is %q", exampleImageName, simg.Name)
 	}
 
-	if simg.Size != len(b) {
-		t.Fatalf("size of uploaded image should be %d bytes; is %d bytes", len(b), simg.Size)
+	if simg.Filesize != len(b) {
+		t.Fatalf("size of uploaded image should be %d bytes; is %d bytes", len(b), simg.Filesize)
 	}
 
 	if simg.Width != width {
@@ -110,13 +110,17 @@ func TestImageService_Download_errFileNotFound(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk(exampleImageDiskName, disk))
 	svc := image.NewService(repo, storage)
 
-	img, err := svc.Download(context.Background(), exampleImageDiskName, exampleImagePath)
+	img, format, err := svc.Download(context.Background(), exampleImageDiskName, exampleImagePath)
 	if !errors.Is(err, media.ErrFileNotFound) {
 		t.Fatalf("Download should return %q for a non-existing image; got %q", media.ErrFileNotFound, err)
 	}
 
 	if img != nil {
 		t.Fatalf("Download should return a nil image if the image does not exist; got %v", img)
+	}
+
+	if format != "" {
+		t.Fatalf("Download should return empty format if the image does not exist; got %q", format)
 	}
 }
 
@@ -133,9 +137,13 @@ func TestImageService_Download(t *testing.T) {
 		t.Fatalf("upload failed: %v", err)
 	}
 
-	downloadedImage, err := svc.Download(context.Background(), exampleImageDiskName, exampleImagePath)
+	downloadedImage, format, err := svc.Download(context.Background(), exampleImageDiskName, exampleImagePath)
 	if err != nil {
 		t.Fatalf("Download shouldn't fail for an existing file; failed with %q", err)
+	}
+
+	if format != "png" {
+		t.Fatalf("Download should return %q for image format of png files; got %q", "png", format)
 	}
 
 	originalImage, _, err := stdimage.Decode(bytes.NewReader(b))
@@ -167,8 +175,8 @@ func TestImageService_Replace(t *testing.T) {
 		t.Fatalf("Replace should not fail; failed with %q", err)
 	}
 
-	if replacedImage.Size != len(b) {
-		t.Fatalf("image size should now be %d bytes; is %d", len(b), replacedImage.Size)
+	if replacedImage.Filesize != len(b) {
+		t.Fatalf("image size should now be %d bytes; is %d", len(b), replacedImage.Filesize)
 	}
 
 	if replacedImage.Width != 600 {
