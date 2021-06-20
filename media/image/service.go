@@ -24,8 +24,8 @@ type Repository interface {
 	// Save stores an Image in the underlying store.
 	Save(context.Context, media.Image) error
 
-	// Get returns the Image located at the specified disk and path from the
-	// underlying store.
+	// Get returns the Image located at the specified disk and path or
+	// ErrUnknownImage.
 	Get(_ context.Context, disk, path string) (media.Image, error)
 
 	// Delete removes the Image at the specified disk and path from the

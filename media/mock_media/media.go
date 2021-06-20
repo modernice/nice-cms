@@ -152,6 +152,144 @@ func (mr *MockImageServiceMockRecorder) Upload(arg0, arg1, name, disk, path inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockImageService)(nil).Upload), arg0, arg1, name, disk, path)
 }
 
+// MockDocumentService is a mock of DocumentService interface.
+type MockDocumentService struct {
+	ctrl     *gomock.Controller
+	recorder *MockDocumentServiceMockRecorder
+}
+
+// MockDocumentServiceMockRecorder is the mock recorder for MockDocumentService.
+type MockDocumentServiceMockRecorder struct {
+	mock *MockDocumentService
+}
+
+// NewMockDocumentService creates a new mock instance.
+func NewMockDocumentService(ctrl *gomock.Controller) *MockDocumentService {
+	mock := &MockDocumentService{ctrl: ctrl}
+	mock.recorder = &MockDocumentServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDocumentService) EXPECT() *MockDocumentServiceMockRecorder {
+	return m.recorder
+}
+
+// Delete mocks base method.
+func (m *MockDocumentService) Delete(arg0 context.Context, arg1 media.Document) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockDocumentServiceMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDocumentService)(nil).Delete), arg0, arg1)
+}
+
+// Download mocks base method.
+func (m *MockDocumentService) Download(arg0 context.Context, arg1 media.Document) ([]byte, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Download", arg0, arg1)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Download indicates an expected call of Download.
+func (mr *MockDocumentServiceMockRecorder) Download(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDocumentService)(nil).Download), arg0, arg1)
+}
+
+// Rename mocks base method.
+func (m *MockDocumentService) Rename(arg0 context.Context, name, disk, path string) (media.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Rename", arg0, name, disk, path)
+	ret0, _ := ret[0].(media.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Rename indicates an expected call of Rename.
+func (mr *MockDocumentServiceMockRecorder) Rename(arg0, name, disk, path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rename", reflect.TypeOf((*MockDocumentService)(nil).Rename), arg0, name, disk, path)
+}
+
+// Replace mocks base method.
+func (m *MockDocumentService) Replace(arg0 context.Context, arg1 io.Reader, disk, path string) (media.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Replace", arg0, arg1, disk, path)
+	ret0, _ := ret[0].(media.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Replace indicates an expected call of Replace.
+func (mr *MockDocumentServiceMockRecorder) Replace(arg0, arg1, disk, path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Replace", reflect.TypeOf((*MockDocumentService)(nil).Replace), arg0, arg1, disk, path)
+}
+
+// Tag mocks base method.
+func (m *MockDocumentService) Tag(arg0 context.Context, disk, path string, tags ...string) (media.Document, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, disk, path}
+	for _, a := range tags {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Tag", varargs...)
+	ret0, _ := ret[0].(media.Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Tag indicates an expected call of Tag.
+func (mr *MockDocumentServiceMockRecorder) Tag(arg0, disk, path interface{}, tags ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, disk, path}, tags...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tag", reflect.TypeOf((*MockDocumentService)(nil).Tag), varargs...)
+}
+
+// Untag mocks base method.
+func (m *MockDocumentService) Untag(arg0 context.Context, disk, path string, tags ...string) (media.Document, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, disk, path}
+	for _, a := range tags {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Untag", varargs...)
+	ret0, _ := ret[0].(media.Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Untag indicates an expected call of Untag.
+func (mr *MockDocumentServiceMockRecorder) Untag(arg0, disk, path interface{}, tags ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, disk, path}, tags...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Untag", reflect.TypeOf((*MockDocumentService)(nil).Untag), varargs...)
+}
+
+// Upload mocks base method.
+func (m *MockDocumentService) Upload(arg0 context.Context, documentName, filename, disk, path string, filesize int) (media.Document, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Upload", arg0, documentName, filename, disk, path, filesize)
+	ret0, _ := ret[0].(media.Document)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Upload indicates an expected call of Upload.
+func (mr *MockDocumentServiceMockRecorder) Upload(arg0, documentName, filename, disk, path, filesize interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockDocumentService)(nil).Upload), arg0, documentName, filename, disk, path, filesize)
+}
+
 // MockImageEncoder is a mock of ImageEncoder interface.
 type MockImageEncoder struct {
 	ctrl     *gomock.Controller
