@@ -65,6 +65,7 @@ func (ctx *ProcessorContext) Encode(w io.Writer, img stdimage.Image, format stri
 	return ctx.encoder.Encode(w, img, format)
 }
 
+// Storage returns the media storage.
 func (ctx *ProcessorContext) Storage() media.Storage {
 	return ctx.storage
 }
