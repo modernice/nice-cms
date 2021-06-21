@@ -2,6 +2,7 @@ package gallery
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,14 +17,22 @@ import (
 	"github.com/modernice/goes/event"
 )
 
+// Aggregate is the name of the Gallery aggregate.
 const Aggregate = "cms.media.image.gallery"
 
 var (
-	ErrEmptyName     = errors.New("empty name")
-	ErrUnnamed       = errors.New("unnamed gallery")
+	// ErrEmptyName is returned when an empty name is provided to a Gallery.
+	ErrEmptyName = errors.New("empty name")
+
+	// ErrUnnamed is returned when trying to use a Gallery that hasn't been created yet.
+	ErrUnnamed = errors.New("unnamed gallery")
+
+	// ErrStackNotFound is returned when a Stack cannot be found within a Gallery.
 	ErrStackNotFound = errors.New("Stack not found")
 )
 
+// A Gallery is a collection of image stacks. A Stack may contain multiple
+// variants of the same image in different sizes.
 type Gallery struct {
 	*aggregate.Base
 
@@ -242,19 +251,41 @@ func (g *Gallery) renameStack(evt event.Event) {
 	g.replace(stack.ID, stack)
 }
 
+type snapshot struct {
+	Stacks []Stack `json:"stacks"`
+}
+
+// MarshalSnapshot implements snapshot.Marshaler.
+func (g *Gallery) MarshalSnapshot() ([]byte, error) {
+	return json.Marshal(snapshot{Stacks: g.Stacks})
+}
+
+// UnmarshalSnapshot implements snapshot.Unmarshaler.
+func (g *Gallery) UnmarshalSnapshot(b []byte) error {
+	var snap snapshot
+	if err := json.Unmarshal(b, &snap); err != nil {
+		return err
+	}
+	g.Stacks = snap.Stacks
+	if g.Stacks == nil {
+		g.Stacks = make([]Stack, 0)
+	}
+	return nil
+}
+
 // A Stack represents an image in a gallery. A Stack may have multiple variants
 // of an image.
 type Stack struct {
-	ID     uuid.UUID
-	Images []Image
+	ID     uuid.UUID `json:"id"`
+	Images []Image   `json:"images"`
 }
 
 // Image is an image of a Stack.
 type Image struct {
 	media.Image
 
-	Original bool
-	Size     string
+	Original bool   `json:"original"`
+	Size     string `json:"size"`
 }
 
 // Original returns the original image in the Stack.

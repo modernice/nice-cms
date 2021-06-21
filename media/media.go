@@ -54,11 +54,11 @@ type ImageEncoder interface {
 
 // File is a file that is stored in a storage backend.
 type File struct {
-	Name     string
-	Disk     string
-	Path     string
-	Filesize int
-	Tags     []string
+	Name     string   `json:"name"`
+	Disk     string   `json:"disk"`
+	Path     string   `json:"path"`
+	Filesize int      `json:"filesize"`
+	Tags     []string `json:"tags"`
 }
 
 // NewFile returns a File with the specified data. NewFile ensures that returned
@@ -188,8 +188,8 @@ func (f File) storageDisk(storage Storage) (StorageDisk, error) {
 type Image struct {
 	File
 
-	Width  int
-	Height int
+	Width  int `json:"width"`
+	Height int `json:"height"`
 }
 
 // NewImage returns an Image with the given data.
@@ -259,7 +259,7 @@ type Document struct {
 
 	// DocumentName is the unique name of the document. DocumentName may be
 	// empty but if it is not, it must be unique.
-	DocumentName string
+	DocumentName string `json:"documentName"`
 }
 
 // NewDocument returns a Document with the given data.
