@@ -3,81 +3,48 @@ package media
 //go:generate mockgen -source=media.go -destination=./mock_media/media.go
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"image"
 	"io"
 )
 
-// ImageService provides uploads and management of images.
-type ImageService interface {
-	// Upload uploads the image in Reader to the given storage disk and path
-	// with the provided name and returns the uploaded Image.
-	//
-	// If the upload fails, ErrUploadFailed is returned.
-	Upload(_ context.Context, _ io.Reader, name, disk, path string) (Image, error)
+// // DocumentService provides upload and management of Documents.
+// type DocumentService interface {
+// 	// Upload uploads the document in Reader to the given storage disk and path
+// 	// with the provided documentName and filename and returns the uploaded
+// 	// Document.
+// 	//
+// 	// If the upload fails, ErrUploadFailed is returned.
+// 	Upload(_ context.Context, documentName, filename, disk, path string, filesize int) (Document, error)
 
-	// Download downloads the Image from the specified disk and path.
-	//
-	// Download returns ErrFileNotFound if the file does not exist in the
-	// storage.
-	Download(_ context.Context, disk, path string) (image.Image, string, error)
+// 	// Download downloads the Document from the specified disk and path.
+// 	//
+// 	// Download returns ErrFileNotFound if the file does not exist in the
+// 	// storage.
+// 	Download(context.Context, Document) ([]byte, string, error)
 
-	// Replace replaces the image at the specified disk and path with the image
-	// in Reader and returns the updated Image.
-	Replace(_ context.Context, _ io.Reader, disk, path string) (Image, error)
+// 	// Replace replaces the document at the specified disk and path with the
+// 	// document in Reader and returns the updated Document.
+// 	Replace(_ context.Context, _ io.Reader, disk, path string) (Image, error)
 
-	// Rename renames the image at the specified disk and path to the given name
-	// and returns the updated Image.
-	Rename(_ context.Context, name, disk, path string) (Image, error)
+// 	// Rename renames the document at the specified disk and path to the given name
+// 	// and returns the updated Document.
+// 	Rename(_ context.Context, name, disk, path string) (Image, error)
 
-	// Delete deletes the image at the specified disk and path. Delete returns
-	// ErrFileNotFound if the image does not exist.
-	Delete(_ context.Context, disk, path string) error
+// 	// Delete deletes the document at the specified disk and path. Delete returns
+// 	// ErrFileNotFound if the document does not exist.
+// 	Delete(context.Context, Document) error
 
-	// Tag tags the specified image with the given tags and returns the updated
-	// Image.
-	Tag(_ context.Context, disk, path string, tags ...string) (Image, error)
+// 	// Tag tags the specified document with the given tags and returns the
+// 	// updated Document.
+// 	Tag(_ context.Context, disk, path string, tags ...string) (Document, error)
 
-	// Untag removes the given tags from the specified image and returns the
-	// updated Image.
-	Untag(_ context.Context, disk, path string, tags ...string) (Image, error)
-}
-
-// DocumentService provides upload and management of Documents.
-type DocumentService interface {
-	// Upload uploads the document in Reader to the given storage disk and path
-	// with the provided documentName and filename and returns the uploaded
-	// Document.
-	//
-	// If the upload fails, ErrUploadFailed is returned.
-	Upload(_ context.Context, documentName, filename, disk, path string, filesize int) (Document, error)
-
-	// Download downloads the Document from the specified disk and path.
-	//
-	// Download returns ErrFileNotFound if the file does not exist in the
-	// storage.
-	Download(context.Context, Document) ([]byte, string, error)
-
-	// Replace replaces the document at the specified disk and path with the
-	// document in Reader and returns the updated Document.
-	Replace(_ context.Context, _ io.Reader, disk, path string) (Image, error)
-
-	// Rename renames the document at the specified disk and path to the given name
-	// and returns the updated Document.
-	Rename(_ context.Context, name, disk, path string) (Image, error)
-
-	// Delete deletes the document at the specified disk and path. Delete returns
-	// ErrFileNotFound if the document does not exist.
-	Delete(context.Context, Document) error
-
-	// Tag tags the specified document with the given tags and returns the
-	// updated Document.
-	Tag(_ context.Context, disk, path string, tags ...string) (Document, error)
-
-	// Untag removes the given tags from the specified document and returns the
-	// updated Document.
-	Untag(_ context.Context, disk, path string, tags ...string) (Document, error)
-}
+// 	// Untag removes the given tags from the specified document and returns the
+// 	// updated Document.
+// 	Untag(_ context.Context, disk, path string, tags ...string) (Document, error)
+// }
 
 // ImageEncoder encodes images, using the appropriate encoder for the specified
 // image format.
@@ -165,6 +132,58 @@ func (f File) Same(other File) bool {
 	return f.Disk == other.Disk && f.Path == other.Path
 }
 
+// Upload uploads the file to storage and returns the File with updated Filesize.
+func (f File) Upload(ctx context.Context, r io.Reader, storage Storage) (File, error) {
+	disk, err := f.storageDisk(storage)
+	if err != nil {
+		return f, err
+	}
+
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return f, fmt.Errorf("read file: %w", err)
+	}
+
+	if err := disk.Put(ctx, f.Path, b); err != nil {
+		return f, fmt.Errorf("upload to %q storage: %w", f.Disk, err)
+	}
+	f.Filesize = len(b)
+
+	return f, nil
+}
+
+// Download downloads the file from the provided Storage.
+func (f File) Download(ctx context.Context, storage Storage) ([]byte, error) {
+	disk, err := f.storageDisk(storage)
+	if err != nil {
+		return nil, err
+	}
+	return disk.Get(ctx, f.Path)
+}
+
+// Replace replaces the file in storage with the contents in r and returns the
+// updated File.
+func (f File) Replace(ctx context.Context, r io.Reader, storage Storage) (File, error) {
+	return f.Upload(ctx, r, storage)
+}
+
+// Delete deletes the file from storage.
+func (f File) Delete(ctx context.Context, storage Storage) error {
+	disk, err := f.storageDisk(storage)
+	if err != nil {
+		return err
+	}
+	return disk.Delete(ctx, f.Path)
+}
+
+func (f File) storageDisk(storage Storage) (StorageDisk, error) {
+	disk, err := storage.Disk(f.Disk)
+	if err != nil {
+		return nil, fmt.Errorf("get %q storage disk: %w", f.Disk, err)
+	}
+	return disk, nil
+}
+
 // Image is storage image.
 type Image struct {
 	File
@@ -182,6 +201,58 @@ func NewImage(width, height int, name, disk, path string, filesize int) Image {
 	}
 }
 
+// WithTag adds the given tags and returns the updated Image.
+func (img Image) WithTag(tags ...string) Image {
+	img.File = img.File.WithTag(tags...)
+	return img
+}
+
+// WithoutTags removes the given tags and returns the updated Image.
+func (img Image) WithoutTag(tags ...string) Image {
+	img.File = img.File.WithoutTag(tags...)
+	return img
+}
+
+// Upload uploads the image to storage and returns the Image with updated
+// Filesize, Width and Height.
+func (img Image) Upload(ctx context.Context, r io.Reader, storage Storage) (Image, error) {
+	var buf bytes.Buffer
+	r = io.TeeReader(r, &buf)
+
+	f, err := img.File.Upload(ctx, r, storage)
+	if err != nil {
+		return img, err
+	}
+	img.File = f
+
+	stdimg, _, err := image.Decode(&buf)
+	if err != nil {
+		return img, fmt.Errorf("decode image: %w", err)
+	}
+
+	img.Width = stdimg.Bounds().Dx()
+	img.Height = stdimg.Bounds().Dy()
+
+	return img, nil
+}
+
+// Download downloads the image from the provided Storage and returns the
+// decoded Image and its format. If you want to download the image without
+// decoding it into an image.Image, use img.File.Download instead.
+func (img Image) Download(ctx context.Context, storage Storage) (image.Image, string, error) {
+	b, err := img.File.Download(ctx, storage)
+	if err != nil {
+		return nil, "", err
+	}
+	return image.Decode(bytes.NewReader(b))
+}
+
+// Replace replaces the image in Storage with the image in r and returns the
+// updated Image.
+func (img Image) Replace(ctx context.Context, r io.Reader, storage Storage) (Image, error) {
+	return img.Upload(ctx, r, storage)
+}
+
 // Document is an arbitrary storage file.
 type Document struct {
 	File
@@ -197,4 +268,32 @@ func NewDocument(documentName, name, disk, path string, filesize int) Document {
 		File:         NewFile(name, disk, path, filesize),
 		DocumentName: documentName,
 	}
+}
+
+// WithTag adds the given tags and returns the updated Document.
+func (doc Document) WithTag(tags ...string) Document {
+	doc.File = doc.File.WithTag(tags...)
+	return doc
+}
+
+// WithoutTags removes the given tags and returns the updated Document.
+func (doc Document) WithoutTag(tags ...string) Document {
+	doc.File = doc.File.WithoutTag(tags...)
+	return doc
+}
+
+// Upload uploads the document to storage and returns the Document with updated Filesize.
+func (doc Document) Upload(ctx context.Context, r io.Reader, storage Storage) (Document, error) {
+	f, err := doc.File.Upload(ctx, r, storage)
+	if err != nil {
+		return doc, err
+	}
+	doc.File = f
+	return doc, nil
+}
+
+// Replace replaces the document in Storage with the document in r and returns
+// the updated Document.
+func (doc Document) Replace(ctx context.Context, r io.Reader, storage Storage) (Document, error) {
+	return doc.Upload(ctx, r, storage)
 }

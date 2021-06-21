@@ -28,50 +28,31 @@ var (
 type ProcessorContext struct {
 	context.Context
 
-	stack        Stack
-	imageService media.ImageService
-	encoder      media.ImageEncoder
+	stack   Stack
+	encoder media.ImageEncoder
+	storage media.Storage
 }
 
 func newProcessorContext(
 	ctx context.Context,
 	stack Stack,
-	imageService media.ImageService,
 	imageEncoder media.ImageEncoder,
+	storage media.Storage,
 ) *ProcessorContext {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return &ProcessorContext{
-		Context:      ctx,
-		stack:        stack,
-		imageService: imageService,
-		encoder:      imageEncoder,
+		Context: ctx,
+		stack:   stack,
+		encoder: imageEncoder,
+		storage: storage,
 	}
-}
-
-// Update calls fn with the processed Stack and replaces the Stack with the one
-// returned by fn.
-//
-// Is is illegal to update the UUID of the Stack. ErrStackCorrupted is returned
-// in such cases.
-func (ctx *ProcessorContext) Update(fn func(Stack) Stack) error {
-	updated := fn(ctx.stack)
-	if updated.ID != ctx.stack.ID {
-		return fmt.Errorf("illegal update of StackID: %w", ErrStackCorrupted)
-	}
-	ctx.stack = updated
-	return nil
 }
 
 // Stack returns the processed Stack.
 func (ctx *ProcessorContext) Stack() Stack {
 	return ctx.stack
-}
-
-// Images returns the ImageService.
-func (ctx *ProcessorContext) Images() media.ImageService {
-	return ctx.imageService
 }
 
 // Encoder returns the ImageEncoder.
@@ -84,6 +65,24 @@ func (ctx *ProcessorContext) Encode(w io.Writer, img stdimage.Image, format stri
 	return ctx.encoder.Encode(w, img, format)
 }
 
+func (ctx *ProcessorContext) Storage() media.Storage {
+	return ctx.storage
+}
+
+// Update calls fn with the processed Stack and replaces the Stack with the one
+// returned by fn.
+//
+// Is is illegal to update the UUID of the Stack. ErrStackCorrupted is returned
+// in such cases.
+func (ctx *ProcessorContext) Update(fn func(Stack) Stack) error {
+	updated := fn(ctx.stack.copy())
+	if updated.ID != ctx.stack.ID {
+		return fmt.Errorf("illegal update of StackID: %w", ErrStackCorrupted)
+	}
+	ctx.stack = updated
+	return nil
+}
+
 // A ProcessingPipeline is a collection of Processors that are run sequentially
 // on a given Stack to post-process an image.
 type ProcessingPipeline []Processor
@@ -92,10 +91,10 @@ type ProcessingPipeline []Processor
 func (pipe ProcessingPipeline) Process(
 	ctx context.Context,
 	stack Stack,
-	imageService media.ImageService,
 	imageEncoder media.ImageEncoder,
+	storage media.Storage,
 ) (Stack, error) {
-	pctx := newProcessorContext(ctx, stack, imageService, imageEncoder)
+	pctx := newProcessorContext(ctx, stack, imageEncoder, storage)
 	for i, proc := range pipe {
 		if err := proc.Process(pctx); err != nil {
 			return pctx.stack, fmt.Errorf("processor #%d failed: %w", i+1, err)
@@ -125,10 +124,9 @@ type Resizer image.Resizer
 func (r Resizer) Process(ctx *ProcessorContext) error {
 	s := ctx.Stack()
 	org := s.Original()
+	storage := ctx.Storage()
 
-	images := ctx.Images()
-
-	original, format, err := images.Download(ctx, org.Disk, org.Path)
+	original, format, err := org.Download(ctx, storage)
 	if err != nil {
 		return fmt.Errorf("download original image %q (%s): %w", org.Path, org.Disk, err)
 	}
@@ -150,12 +148,15 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 
 	for size, buf := range encoded {
 		path := r.path(org.Path, size, format)
-		uploaded, err := images.Upload(ctx, buf, org.Name, org.Disk, path)
+
+		img := media.NewImage(0, 0, org.Name, org.Disk, path, 0)
+		img, err := img.Upload(ctx, buf, storage)
 		if err != nil {
 			return fmt.Errorf("upload %q (%s): %w", path, org.Disk, err)
 		}
+
 		resizedImages = append(resizedImages, Image{
-			Image: uploaded,
+			Image: img,
 			Size:  size,
 		})
 	}
@@ -191,7 +192,7 @@ type PNGCompressor image.PNGCompressor
 func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 	c := image.PNGCompressor(comp)
 	stack := ctx.Stack()
-	images := ctx.Images()
+	storage := ctx.Storage()
 
 	errs, fail := concurrent.Errors(ctx)
 
@@ -201,7 +202,7 @@ func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 		go func(img Image, i int) {
 			defer wg.Done()
 
-			stdimg, format, err := images.Download(ctx, img.Disk, img.Path)
+			stdimg, format, err := img.Download(ctx, storage)
 			if err != nil {
 				fail(fmt.Errorf("download image %q (%s): %w", img.Path, img.Disk, err))
 				return
@@ -219,7 +220,7 @@ func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 				return
 			}
 
-			replaced, err := images.Replace(ctx, &buf, img.Disk, img.Path)
+			replaced, err := img.Replace(ctx, &buf, storage)
 			if err != nil {
 				fail(fmt.Errorf("replace image %q (%s): %w", img.Path, img.Disk, err))
 				return

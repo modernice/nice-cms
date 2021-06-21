@@ -5,164 +5,145 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/modernice/cms/internal/concurrent"
+	"github.com/modernice/cms/internal/unique"
 	"github.com/modernice/cms/media"
-	"github.com/modernice/cms/media/image"
+	"github.com/modernice/goes/aggregate"
+	"github.com/modernice/goes/event"
 )
 
+const Aggregate = "cms.media.image.gallery"
+
 var (
+	ErrEmptyName     = errors.New("empty name")
+	ErrUnnamed       = errors.New("unnamed gallery")
 	ErrStackNotFound = errors.New("Stack not found")
 )
 
 type Gallery struct {
+	*aggregate.Base
+
 	Name   string
 	Stacks []Stack
 }
 
-func New(name string) *Gallery {
+// New returns a new Gallery.
+func New(id uuid.UUID) *Gallery {
 	return &Gallery{
-		Name:   name,
+		Base:   aggregate.New(Aggregate, id),
 		Stacks: make([]Stack, 0),
 	}
 }
 
+// Stack returns the Stack with the given UUID or ErrStackNotFound.
 func (g *Gallery) Stack(id uuid.UUID) (Stack, error) {
 	for _, stack := range g.Stacks {
 		if stack.ID == id {
-			return stack, nil
+			return stack.copy(), nil
 		}
 	}
 	return Stack{}, ErrStackNotFound
 }
 
-func (g *Gallery) Refresh(stack *Stack) error {
-	if stack == nil {
-		return nil
+// ApplyEvent applies aggregate events.
+func (g *Gallery) ApplyEvent(evt event.Event) {
+	switch evt.Name() {
+	case Created:
+		g.create(evt)
+	case ImageUploaded:
+		g.uploadImage(evt)
+	case StackDeleted:
+		g.deleteStack(evt)
+	case StackTagged:
+		g.tagStack(evt)
+	case StackUntagged:
+		g.untagStack(evt)
+	case StackRenamed:
+		g.renameStack(evt)
 	}
+}
 
-	s, err := g.Stack(stack.ID)
-	if err != nil {
-		return err
+// Create creates the Gallery with the given name.
+func (g *Gallery) Create(name string) error {
+	if name = strings.TrimSpace(name); name == "" {
+		return ErrEmptyName
 	}
-	*stack = s
-
+	aggregate.NextEvent(g, Created, CreatedData{Name: name})
 	return nil
 }
 
-type UploadOption func(*uploadConfig)
-
-type uploadConfig struct {
-	pipeline          ProcessingPipeline
-	processingTimeout time.Duration
+func (g *Gallery) create(evt event.Event) {
+	data := evt.Data().(CreatedData)
+	g.Name = data.Name
 }
 
-func ProcessStack(pipe ProcessingPipeline, timeout time.Duration) UploadOption {
-	return func(cfg *uploadConfig) {
-		cfg.pipeline = pipe
-		cfg.processingTimeout = timeout
-	}
-}
-
-func (g *Gallery) Upload(
-	ctx context.Context,
-	storage media.Storage,
-	images image.Repository,
-	imageService media.ImageService,
-	enc media.ImageEncoder,
-	r io.Reader,
-	name, disk, path string,
-	opts ...UploadOption,
-) (Stack, <-chan error, error) {
-	var cfg uploadConfig
-	for _, opt := range opts {
-		opt(&cfg)
+// Upload uploads the image in r to storage and returns the Stack for that image.
+func (g *Gallery) Upload(ctx context.Context, storage media.Storage, r io.Reader, name, diskName, path string) (Stack, error) {
+	if err := g.checkCreated(); err != nil {
+		return Stack{}, err
 	}
 
-	img, err := imageService.Upload(ctx, r, name, disk, path)
-	if err != nil {
-		return Stack{}, nil, fmt.Errorf("upload to storage: %w", err)
+	img := media.NewImage(0, 0, name, diskName, path, 0)
+
+	var err error
+	if img, err = img.Upload(ctx, r, storage); err != nil {
+		return Stack{}, fmt.Errorf("upload to %q storage: %w", diskName, err)
 	}
 
 	stack := Stack{
-		ID:      uuid.New(),
-		Gallery: g.Name,
-		Images:  []Image{{Image: img, Original: true}},
+		ID:     uuid.New(),
+		Images: []Image{{Image: img, Original: true}},
 	}
 
-	for _, img := range stack.Images {
-		if err := images.Save(ctx, img.Image); err != nil {
-			return stack, nil, fmt.Errorf("save Image of Stack: %w", err)
-		}
-	}
+	aggregate.NextEvent(g, ImageUploaded, ImageUploadedData{Stack: stack})
 
-	g.Stacks = append(g.Stacks, stack)
-
-	processed := make(chan error, 1)
-	go g.process(imageService, enc, cfg, stack, processed)
-
-	return stack, processed, nil
+	return stack, nil
 }
 
-func (g *Gallery) process(imageService media.ImageService, enc media.ImageEncoder, cfg uploadConfig, stack Stack, out chan<- error) {
-	ctx := context.Background()
-	if cfg.processingTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, cfg.processingTimeout)
-		defer cancel()
+func (g *Gallery) checkCreated() error {
+	if g.Name == "" {
+		return ErrUnnamed
 	}
-
-	fail := func(err error) {
-		select {
-		case <-ctx.Done():
-		case out <- err:
-		}
-	}
-
-	processed, err := cfg.pipeline.Process(ctx, stack, imageService, enc)
-	if err != nil {
-		fail(fmt.Errorf("ProcessingPipeline: %w", err))
-		return
-	}
-
-	g.replace(processed.ID, processed)
-
-	select {
-	case <-ctx.Done():
-	case out <- nil:
-	}
+	return nil
 }
 
-func (g *Gallery) replace(id uuid.UUID, replacement Stack) {
-	for i, stack := range g.Stacks {
-		if stack.ID == id {
-			g.Stacks[i] = replacement
-			return
-		}
-	}
+func (g *Gallery) uploadImage(evt event.Event) {
+	data := evt.Data().(ImageUploadedData)
+	g.Stacks = append(g.Stacks, data.Stack)
 }
 
-func (g *Gallery) Delete(ctx context.Context, imageService media.ImageService, stack Stack) error {
+// Delete deletes the given Stack from the Gallery and Storage.
+func (g *Gallery) Delete(ctx context.Context, storage media.Storage, stack Stack) error {
+	if err := g.checkCreated(); err != nil {
+		return err
+	}
+
 	var wg sync.WaitGroup
 	for _, img := range stack.Images {
 		wg.Add(1)
 		go func(img Image) {
 			defer wg.Done()
 			// TODO: report error (?)
-			imageService.Delete(ctx, img.Disk, img.Path)
+			img.Delete(ctx, storage)
 		}(img)
 	}
 
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-concurrent.WhenDone(&wg):
-		g.remove(stack.ID)
+	case <-concurrent.Wait(&wg):
+		aggregate.NextEvent(g, StackDeleted, StackDeletedData{Stack: stack})
 		return nil
 	}
+}
+
+func (g *Gallery) deleteStack(evt event.Event) {
+	data := evt.Data().(StackDeletedData)
+	g.remove(data.Stack.ID)
 }
 
 func (g *Gallery) remove(id uuid.UUID) {
@@ -175,45 +156,105 @@ func (g *Gallery) remove(id uuid.UUID) {
 }
 
 // Tag tags each Image in the provided Stack through the ImageService.
-func (g *Gallery) Tag(ctx context.Context, imageService media.ImageService, stack Stack, tags ...string) (Stack, error) {
-	images := make([]Image, len(stack.Images))
-	copy(images, stack.Images)
-
-	for i, img := range images {
-		tagged, err := imageService.Tag(ctx, img.Disk, img.Path, tags...)
-		if err != nil {
-			return stack, fmt.Errorf("tag %q (%s) with tags %v: %w", img.Path, img.Disk, tags, err)
-		}
-		images[i].Image = tagged
+func (g *Gallery) Tag(ctx context.Context, stack Stack, tags ...string) (Stack, error) {
+	if err := g.checkCreated(); err != nil {
+		return Stack{}, err
 	}
-	stack.Images = images
+	tags = unique.Strings(tags...)
+	aggregate.NextEvent(g, StackTagged, StackTaggedData{
+		StackID: stack.ID,
+		Tags:    tags,
+	})
+	return g.Stack(stack.ID)
+}
 
-	return stack, nil
+func (g *Gallery) tagStack(evt event.Event) {
+	data := evt.Data().(StackTaggedData)
+	stack, err := g.Stack(data.StackID)
+	if err != nil {
+		return
+	}
+	stack = stack.WithTag(data.Tags...)
+	g.replace(stack.ID, stack)
+}
+
+func (g *Gallery) replace(id uuid.UUID, stack Stack) {
+	for i, s := range g.Stacks {
+		if s.ID == id {
+			g.Stacks[i] = stack
+			return
+		}
+	}
 }
 
 // Untag removes tags from each Image of the provided Stack.
-func (g *Gallery) Untag(ctx context.Context, imageService media.ImageService, stack Stack, tags ...string) (Stack, error) {
-	images := make([]Image, len(stack.Images))
-	copy(images, stack.Images)
-
-	for i, img := range images {
-		tagged, err := imageService.Untag(ctx, img.Disk, img.Path, tags...)
-		if err != nil {
-			return stack, fmt.Errorf("remove tags %v from %q (%s): %w", tags, img.Path, img.Disk, err)
-		}
-		images[i].Image = tagged
+func (g *Gallery) Untag(ctx context.Context, stack Stack, tags ...string) (Stack, error) {
+	if err := g.checkCreated(); err != nil {
+		return Stack{}, err
 	}
-	stack.Images = images
+	tags = unique.Strings(tags...)
+	aggregate.NextEvent(g, StackUntagged, StackUntaggedData{
+		StackID: stack.ID,
+		Tags:    tags,
+	})
+	return g.Stack(stack.ID)
+}
 
-	return stack, nil
+func (g *Gallery) untagStack(evt event.Event) {
+	data := evt.Data().(StackUntaggedData)
+	stack, err := g.Stack(data.StackID)
+	if err != nil {
+		return
+	}
+	stack = stack.WithoutTag(data.Tags...)
+	g.replace(stack.ID, stack)
+}
+
+// Rename renames each Image in the given Stack to name.
+func (g *Gallery) Rename(ctx context.Context, stackID uuid.UUID, name string) (Stack, error) {
+	if err := g.checkCreated(); err != nil {
+		return Stack{}, err
+	}
+
+	stack, err := g.Stack(stackID)
+	if err != nil {
+		return Stack{}, err
+	}
+
+	aggregate.NextEvent(g, StackRenamed, StackRenamedData{
+		StackID: stack.ID,
+		OldName: stack.Original().Name,
+		Name:    name,
+	})
+
+	return g.Stack(stack.ID)
+}
+
+func (g *Gallery) renameStack(evt event.Event) {
+	data := evt.Data().(StackRenamedData)
+	stack, err := g.Stack(data.StackID)
+	if err != nil {
+		return
+	}
+	for i := range stack.Images {
+		stack.Images[i].Name = data.Name
+	}
+	g.replace(stack.ID, stack)
 }
 
 // A Stack represents an image in a gallery. A Stack may have multiple variants
 // of an image.
 type Stack struct {
-	ID      uuid.UUID
-	Gallery string
-	Images  []Image
+	ID     uuid.UUID
+	Images []Image
+}
+
+// Image is an image of a Stack.
+type Image struct {
+	media.Image
+
+	Original bool
+	Size     string
 }
 
 // Original returns the original image in the Stack.
@@ -226,10 +267,29 @@ func (s Stack) Original() Image {
 	return Image{}
 }
 
-// Image is an image of a Stack.
-type Image struct {
-	media.Image
+// WithTag adds the given tags to each Image in the Stack and returns the
+// updated Stack. The original Stack is not modified.
+func (s Stack) WithTag(tags ...string) Stack {
+	s = s.copy()
+	for i, img := range s.Images {
+		s.Images[i].Image = img.WithTag(tags...)
+	}
+	return s
+}
 
-	Original bool
-	Size     string
+// WithoutTag removes the given tags from each Image and returns the updated
+// Stack. The original Stack is not modified.
+func (s Stack) WithoutTag(tags ...string) Stack {
+	s = s.copy()
+	for i, img := range s.Images {
+		s.Images[i].Image = img.WithoutTag(tags...)
+	}
+	return s
+}
+
+func (s Stack) copy() Stack {
+	images := make([]Image, len(s.Images))
+	copy(images, s.Images)
+	s.Images = images
+	return s
 }

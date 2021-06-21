@@ -18,9 +18,10 @@ import (
 )
 
 func TestProcessingPipeline_Process(t *testing.T) {
-	images := image.InMemoryRepository()
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	imageService := image.NewService(images, storage)
+	enc := image.NewEncoder()
+	g := gallery.New(uuid.New())
+	g.Create("foo")
 
 	pipe := gallery.ProcessingPipeline{
 		gallery.Resizer{
@@ -36,7 +37,7 @@ func TestProcessingPipeline_Process(t *testing.T) {
 	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
 	filesize := len(buf.Bytes())
 
-	if _, err := imageService.Upload(context.Background(), buf, exampleName, exampleDisk, examplePath); err != nil {
+	if _, err := g.Upload(context.Background(), storage, buf, exampleName, exampleDisk, examplePath); err != nil {
 		t.Fatalf("upload failed: %v", err)
 	}
 
@@ -50,9 +51,7 @@ func TestProcessingPipeline_Process(t *testing.T) {
 		},
 	}
 
-	enc := image.NewEncoder()
-
-	processed, err := pipe.Process(context.Background(), stack, imageService, enc)
+	processed, err := pipe.Process(context.Background(), stack, enc, storage)
 	if err != nil {
 		t.Fatalf("ProcessingPipeline failed to process Stack: %v", err)
 	}
@@ -111,13 +110,8 @@ func TestProcessingPipeline_Process(t *testing.T) {
 				t.Fatalf("Stack should contain image with %q size", tt.size)
 			}
 
-			mediaImage, err := images.Get(context.Background(), foundImage.Disk, foundImage.Path)
-			if err != nil {
-				t.Fatalf("ImageRepository should contain %q (%s)", foundImage.Path, foundImage.Disk)
-			}
-
-			if mediaImage.Width != tt.wantWidth {
-				t.Fatalf("Image in ImageRepository should have width of %d; has %d", tt.wantWidth, mediaImage.Width)
+			if foundImage.Width != tt.wantWidth {
+				t.Fatalf("Image in ImageRepository should have width of %d; has %d", tt.wantWidth, foundImage.Width)
 			}
 
 			wantPath := examplePath
@@ -126,17 +120,15 @@ func TestProcessingPipeline_Process(t *testing.T) {
 				wantPath = fmt.Sprintf("%s_%s.png", pathWithoutExt, tt.size)
 			}
 
-			if mediaImage.Path != wantPath {
-				t.Fatalf("Image path should be %q; is %q", wantPath, mediaImage.Path)
+			if foundImage.Path != wantPath {
+				t.Fatalf("Image path should be %q; is %q", wantPath, foundImage.Path)
 			}
 		})
 	}
 }
 
 func TestProcessingPipeline_Process_illegalStackIDUpdate(t *testing.T) {
-	images := image.InMemoryRepository()
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	imageService := image.NewService(images, storage)
 
 	pipe := gallery.ProcessingPipeline{
 		gallery.ProcessorFunc(func(ctx *gallery.ProcessorContext) error {
@@ -162,7 +154,7 @@ func TestProcessingPipeline_Process_illegalStackIDUpdate(t *testing.T) {
 
 	enc := image.NewEncoder()
 
-	_, err := pipe.Process(context.Background(), stack, imageService, enc)
+	_, err := pipe.Process(context.Background(), stack, enc, storage)
 	if !errors.Is(err, gallery.ErrStackCorrupted) {
 		t.Fatalf("ProcessingPipeline should fail with %q when trying to update the UUID of a Stack; got %q", gallery.ErrStackCorrupted, err)
 	}

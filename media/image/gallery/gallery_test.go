@@ -7,15 +7,14 @@ import (
 	"image/color"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/modernice/cms/internal/imggen"
 	"github.com/modernice/cms/media"
-	"github.com/modernice/cms/media/image"
 	"github.com/modernice/cms/media/image/gallery"
 	"github.com/modernice/cms/media/mock_media"
+	"github.com/modernice/goes/test"
 )
 
 var (
@@ -24,23 +23,75 @@ var (
 	examplePath = "/example/example.png"
 )
 
-func TestGallery_Upload_withoutProcessing(t *testing.T) {
-	images := image.InMemoryRepository()
-	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	imageService := image.NewService(images, storage)
-	enc := image.NewEncoder()
+func TestNew(t *testing.T) {
+	id := uuid.New()
+	g := gallery.New(id)
 
-	g := gallery.New("foo")
+	if g.AggregateID() != id {
+		t.Fatalf("AggregateID should return %v; got %v", id, g.AggregateID())
+	}
+
+	if g.AggregateName() != "cms.media.image.gallery" {
+		t.Fatalf("AggregateName should return %q; got %q", "cms.media.image.gallery", g.AggregateName())
+	}
+}
+
+func TestGallery_Create(t *testing.T) {
+	g := gallery.New(uuid.New())
+
+	name := "foo"
+	if err := g.Create(name); err != nil {
+		t.Fatalf("Create shouldn't fail with a %q name; failed with %q", name, err)
+	}
+
+	if g.Name != name {
+		t.Fatalf("Name should be %q; is %q", name, g.Name)
+	}
+
+	test.Change(t, g, gallery.Created, test.WithEventData(gallery.CreatedData{Name: name}))
+}
+
+func TestGallery_Create_emptyName(t *testing.T) {
+	g := gallery.New(uuid.New())
+
+	name := "   "
+	if err := g.Create(name); !errors.Is(err, gallery.ErrEmptyName) {
+		t.Fatalf("Create with an empty name should fail with %q; got %q", gallery.ErrEmptyName, err)
+	}
+
+	if g.Name != "" {
+		t.Fatalf("Name should be %q; is %q", "", g.Name)
+	}
+
+	test.NoChange(t, g, gallery.Created)
+}
+
+func TestGallery_Upload_unnamed(t *testing.T) {
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+
+	g := gallery.New(uuid.New())
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
+
+	if _, err := g.Upload(context.Background(), storage, buf, exampleName, exampleDisk, examplePath); !errors.Is(err, gallery.ErrUnnamed) {
+		t.Fatalf("Upload should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	}
+
+	test.NoChange(t, g, gallery.ImageUploaded)
+}
+
+func TestGallery_Upload(t *testing.T) {
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
 
 	_, buf := imggen.ColoredRectangle(400, 200, color.RGBA{100, 100, 100, 0xff})
 	b := buf.Bytes()
 
-	stack, processed, err := g.Upload(
+	stack, err := g.Upload(
 		context.Background(),
 		storage,
-		images,
-		imageService,
-		enc,
 		buf,
 		exampleName,
 		exampleDisk,
@@ -52,18 +103,6 @@ func TestGallery_Upload_withoutProcessing(t *testing.T) {
 
 	if stack.ID == uuid.Nil {
 		t.Fatalf("Stack should have non-nil UUID")
-	}
-
-	timer := time.NewTimer(time.Second)
-	defer timer.Stop()
-
-	select {
-	case <-timer.C:
-		t.Fatal("timed out")
-	case err := <-processed:
-		if err != nil {
-			t.Fatalf("processing failed: %v", err)
-		}
 	}
 
 	if len(stack.Images) != 1 {
@@ -113,100 +152,22 @@ func TestGallery_Upload_withoutProcessing(t *testing.T) {
 		t.Fatalf("Gallery returned wrong Stack. want=%v got=%v", stack, galleryStack)
 	}
 
-	repoImage, err := images.Get(context.Background(), img.Disk, img.Path)
-	if err != nil {
-		t.Fatalf("image.Repository should contain the image of the Stack; got %q", err)
-	}
+	expectStorageFileContents(t, storage, galleryStack.Images[0].Disk, galleryStack.Images[0].Path, b)
 
-	if !reflect.DeepEqual(repoImage, img.Image) {
-		t.Fatalf("image.Repository returned wrong Image. want=%v got=%v", img, repoImage)
-	}
-
-	expectStorageFileContents(t, storage, repoImage.Disk, repoImage.Path, b)
-}
-
-func TestGallery_Upload_withProcessing(t *testing.T) {
-	images := image.InMemoryRepository()
-	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	imageService := image.NewService(images, storage)
-	enc := image.NewEncoder()
-
-	pipe := gallery.ProcessingPipeline{
-		gallery.Resizer{
-			"small":  {Width: 640},
-			"medium": {Width: 1280},
-			"large":  {Width: 1920},
-		},
-	}
-	g := gallery.New("foo")
-
-	_, buf := imggen.ColoredRectangle(400, 200, color.RGBA{100, 100, 100, 0xff})
-
-	stack, processed, err := g.Upload(
-		context.Background(),
-		storage,
-		images,
-		imageService,
-		enc,
-		buf,
-		exampleName,
-		exampleDisk,
-		examplePath,
-		gallery.ProcessStack(pipe, 0),
-	)
-	if err != nil {
-		t.Fatalf("upload shouldn't fail; failed with %q", err)
-	}
-
-	if len(stack.Images) != 1 {
-		t.Fatalf("Stack should have 1 image until it has been processed; has %d", len(stack.Images))
-	}
-
-	timer := time.NewTimer(3 * time.Second)
-	defer timer.Stop()
-
-	select {
-	case <-timer.C:
-		t.Fatal("timed out")
-	case err := <-processed:
-		if err != nil {
-			t.Fatalf("processing failed: %v", err)
-		}
-	}
-
-	if err := g.Refresh(&stack); err != nil {
-		t.Fatalf("failed to refresh Stack: %v", err)
-	}
-
-	if len(stack.Images) != 4 {
-		t.Fatalf("Stack should have 4 images; has %d", len(stack.Images))
-	}
-
-	for _, img := range stack.Images {
-		if _, err := images.Get(context.Background(), img.Disk, img.Path); err != nil {
-			t.Fatalf("ImageRepository should contain %q (%s); failed with %q", img.Path, img.Disk, err)
-		}
-
-		expectStorageFile(t, storage, img.Disk, img.Path)
-	}
+	test.Change(t, g, gallery.ImageUploaded, test.WithEventData(gallery.ImageUploadedData{Stack: stack}))
 }
 
 func TestGallery_Stack(t *testing.T) {
-	images := image.InMemoryRepository()
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	imageService := image.NewService(images, storage)
-	enc := image.NewEncoder()
 
-	g := gallery.New("foo")
+	g := gallery.New(uuid.New())
+	g.Create("foo")
 
 	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
 
-	uploaded, _, err := g.Upload(
+	uploaded, err := g.Upload(
 		context.Background(),
 		storage,
-		images,
-		imageService,
-		enc,
 		buf,
 		exampleName,
 		exampleDisk,
@@ -226,22 +187,28 @@ func TestGallery_Stack(t *testing.T) {
 	}
 }
 
-func TestGallery_Delete(t *testing.T) {
-	images := image.InMemoryRepository()
-	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	imageService := image.NewService(images, storage)
-	enc := image.NewEncoder()
+func TestGallery_Delete_unnamed(t *testing.T) {
+	storage := media.NewStorage()
+	g := gallery.New(uuid.New())
 
-	g := gallery.New("foo")
+	if err := g.Delete(context.Background(), storage, gallery.Stack{}); !errors.Is(err, gallery.ErrUnnamed) {
+		t.Fatalf("Delete should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	}
+
+	test.NoChange(t, g, gallery.StackDeleted)
+}
+
+func TestGallery_Delete(t *testing.T) {
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
 
 	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
 
-	uploaded, _, err := g.Upload(
+	uploaded, err := g.Upload(
 		context.Background(),
 		storage,
-		images,
-		imageService,
-		enc,
 		buf,
 		exampleName,
 		exampleDisk,
@@ -251,7 +218,7 @@ func TestGallery_Delete(t *testing.T) {
 		t.Fatalf("upload failed: %v", err)
 	}
 
-	if err := g.Delete(context.Background(), imageService, uploaded); err != nil {
+	if err := g.Delete(context.Background(), storage, uploaded); err != nil {
 		t.Fatalf("deleting an existing Stack shouldn't fail; failed with %q", err)
 	}
 
@@ -260,34 +227,28 @@ func TestGallery_Delete(t *testing.T) {
 	}
 
 	for _, img := range uploaded.Images {
-		if _, err := images.Get(context.Background(), img.Disk, img.Path); !errors.Is(err, image.ErrUnknownImage) {
-			t.Fatalf("ImageRepository.Get should return %q for a deleted image; got %q", image.ErrUnknownImage, err)
-		}
-
 		expectNoStorageFile(t, storage, img.Disk, img.Path)
 	}
+
+	test.Change(t, g, gallery.StackDeleted, test.WithEventData(gallery.StackDeletedData{Stack: uploaded}))
 }
 
-func TestGallery_Delete_failingImageService(t *testing.T) {
+func TestGallery_Delete_failingStorage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	images := image.InMemoryRepository()
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	imageService := image.NewService(images, storage)
-	mockImageService := mock_media.NewMockImageService(ctrl)
-	enc := image.NewEncoder()
+	mockDisk := mock_media.NewMockStorageDisk(ctrl)
+	mockStorage := media.NewStorage(media.ConfigureDisk(exampleDisk, mockDisk))
 
-	g := gallery.New("foo")
+	g := gallery.New(uuid.New())
+	g.Create("foo")
 
 	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
 
-	uploaded, _, err := g.Upload(
+	uploaded, err := g.Upload(
 		context.Background(),
 		storage,
-		images,
-		imageService,
-		enc,
 		buf,
 		exampleName,
 		exampleDisk,
@@ -298,64 +259,53 @@ func TestGallery_Delete_failingImageService(t *testing.T) {
 	}
 
 	mockError := errors.New("mock error")
-	mockImageService.EXPECT().Delete(gomock.Any(), exampleDisk, examplePath).Return(mockError)
+	mockDisk.EXPECT().Delete(gomock.Any(), examplePath).Return(mockError)
 
-	if err := g.Delete(context.Background(), mockImageService, uploaded); err != nil {
-		t.Fatalf("Delete should continue executing when the ImageService fails to delete images; got %q", err)
+	if err := g.Delete(context.Background(), mockStorage, uploaded); err != nil {
+		t.Fatalf("Delete should continue executing when the StorageDisk fails to delete images; got %q", err)
 	}
 
 	if _, err := g.Stack(uploaded.ID); !errors.Is(err, gallery.ErrStackNotFound) {
 		t.Fatalf("Get should return %q for a deleted Stack; got %q", gallery.ErrStackNotFound, err)
 	}
+
+	test.Change(t, g, gallery.StackDeleted, test.WithEventData(gallery.StackDeletedData{Stack: uploaded}))
+}
+
+func TestGallery_Tag_Untag_unnamed(t *testing.T) {
+	g := gallery.New(uuid.New())
+	var stack gallery.Stack
+
+	if _, err := g.Tag(context.Background(), stack, "foo", "bar", "baz"); !errors.Is(err, gallery.ErrUnnamed) {
+		t.Fatalf("Tag should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	}
+
+	if _, err := g.Untag(context.Background(), stack, "foo", "bar", "baz"); !errors.Is(err, gallery.ErrUnnamed) {
+		t.Fatalf("Untag should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	}
 }
 
 func TestGallery_Tag_Untag(t *testing.T) {
-	images := image.InMemoryRepository()
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	imageService := image.NewService(images, storage)
-	enc := image.NewEncoder()
 
-	g := gallery.New("foo")
+	g := gallery.New(uuid.New())
+	g.Create("foo")
 
 	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
 
-	pipe := gallery.ProcessingPipeline{
-		gallery.Resizer{
-			"small":  {Width: 640},
-			"medium": {Width: 1280},
-			"large":  {Width: 1920},
-		},
-	}
-
-	uploaded, processed, err := g.Upload(
+	uploaded, err := g.Upload(
 		context.Background(),
 		storage,
-		images,
-		imageService,
-		enc,
 		buf,
 		exampleName,
 		exampleDisk,
 		examplePath,
-		gallery.ProcessStack(pipe, 0),
 	)
 	if err != nil {
 		t.Fatalf("upload failed: %v", err)
 	}
 
-	timer := time.NewTimer(3 * time.Second)
-	defer timer.Stop()
-
-	select {
-	case <-timer.C:
-		t.Fatal("timed out")
-	case err := <-processed:
-		if err != nil {
-			t.Fatalf("processing failed: %v", err)
-		}
-	}
-
-	tagged, err := g.Tag(context.Background(), imageService, uploaded, "foo", "bar", "baz", "baz")
+	tagged, err := g.Tag(context.Background(), uploaded, "foo", "bar", "baz", "baz")
 	if err != nil {
 		t.Fatalf("Tag failed with %q", err)
 	}
@@ -370,7 +320,7 @@ func TestGallery_Tag_Untag(t *testing.T) {
 		}
 	}
 
-	untagged, err := g.Untag(context.Background(), imageService, tagged, "bar", "foo")
+	untagged, err := g.Untag(context.Background(), tagged, "bar", "foo")
 	if err != nil {
 		t.Fatalf("Untag failed with %q", err)
 	}
@@ -384,57 +334,65 @@ func TestGallery_Tag_Untag(t *testing.T) {
 			t.Fatalf("Image should have %v tags; has %v", []string{"baz"}, img.Tags)
 		}
 	}
+
+	test.Change(t, g, gallery.StackTagged, test.WithEventData(gallery.StackTaggedData{
+		StackID: tagged.ID,
+		Tags:    []string{"foo", "bar", "baz"},
+	}))
+
+	test.Change(t, g, gallery.StackUntagged, test.WithEventData(gallery.StackUntaggedData{
+		StackID: untagged.ID,
+		Tags:    []string{"bar", "foo"},
+	}))
 }
 
-// func TestGallery_Rename(t *testing.T) {
-// 	images := image.InMemoryRepository()
-// 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-// 	imageService := image.NewService(images, storage)
-// 	enc := image.NewEncoder()
-// 	g := gallery.New("foo")
+func TestGallery_Rename_unnamed(t *testing.T) {
+	g := gallery.New(uuid.New())
 
-// 	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
+	if _, err := g.Rename(context.Background(), uuid.New(), "new name"); !errors.Is(err, gallery.ErrUnnamed) {
+		t.Fatalf("Rename should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	}
+}
 
-// 	pipe := gallery.ProcessingPipeline{
-// 		gallery.Resizer{
-// 			"small":  {Width: 640},
-// 			"medium": {Width: 1280},
-// 			"large":  {Width: 1920},
-// 		},
-// 	}
+func TestGallery_Rename(t *testing.T) {
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+	g := gallery.New(uuid.New())
+	g.Create("foo")
 
-// 	uploaded, processed, err := g.Upload(
-// 		context.Background(),
-// 		storage,
-// 		images,
-// 		imageService,
-// 		enc,
-// 		buf,
-// 		exampleName,
-// 		exampleDisk,
-// 		examplePath,
-// 		gallery.ProcessStack(pipe, 0),
-// 	)
-// 	if err != nil {
-// 		t.Fatalf("upload failed: %v", err)
-// 	}
+	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
 
-// 	timer := time.NewTimer(3 * time.Second)
-// 	defer timer.Stop()
-// 	select {
-// 	case <-timer.C:
-// 		t.Fatal("timed out")
-// 	case err := <-processed:
-// 		if err != nil {
-// 			t.Fatalf("processing failed: %v", err)
-// 		}
-// 	}
+	uploaded, err := g.Upload(
+		context.Background(),
+		storage,
+		buf,
+		exampleName,
+		exampleDisk,
+		examplePath,
+	)
+	if err != nil {
+		t.Fatalf("upload failed: %v", err)
+	}
 
-// 	stack, err := g.Stack(uploaded.ID)
-// 	if err != nil {
-// 		t.Fatalf("failed to fetch Stack: %w", err)
-// 	}
-// }
+	renamed, err := g.Rename(context.Background(), uploaded.ID, "New name")
+	if err != nil {
+		t.Fatalf("Rename failed with %q", err)
+	}
+
+	stack, err := g.Stack(renamed.ID)
+	if err != nil {
+		t.Fatalf("Gallery should contain Stack %q; failed with %q", renamed.ID, err)
+	}
+
+	if !reflect.DeepEqual(stack, renamed) {
+		t.Fatalf("Stack returned wrong Stack. want=%v got=%v", renamed, stack)
+	}
+
+	test.Change(t, g, gallery.StackRenamed, test.WithEventData(gallery.StackRenamedData{
+		StackID: renamed.ID,
+		OldName: exampleName,
+		Name:    "New name",
+	}))
+}
 
 func expectStorageFileContents(t *testing.T, storage media.Storage, diskName, path string, contents []byte) {
 	disk, err := storage.Disk(diskName)
@@ -449,17 +407,6 @@ func expectStorageFileContents(t *testing.T, storage media.Storage, diskName, pa
 
 	if !bytes.Equal(storageBytes, contents) {
 		t.Fatalf("storage file has wrong contents. want=%v got=%v", contents, storageBytes)
-	}
-}
-
-func expectStorageFile(t *testing.T, storage media.Storage, diskName, path string) {
-	disk, err := storage.Disk(diskName)
-	if err != nil {
-		t.Fatalf("get %q storage disk: %v", diskName, err)
-	}
-
-	if _, err := disk.Get(context.Background(), path); err != nil {
-		t.Fatalf("storage should contain file %q (%s); failed with %q", path, diskName, err)
 	}
 }
 
