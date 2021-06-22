@@ -93,6 +93,8 @@ func (g *Gallery) ApplyEvent(evt event.Event) {
 		g.untagStack(evt)
 	case StackRenamed:
 		g.renameStack(evt)
+	case StackUpdated:
+		g.updateStack(evt)
 	}
 }
 
@@ -291,11 +293,14 @@ func (g *Gallery) Update(id uuid.UUID, update func(Stack) Stack) error {
 	}
 
 	stack = update(stack)
-	if err := g.replace(stack.ID, stack); err != nil {
-		return err
-	}
+	aggregate.NextEvent(g, StackUpdated, StackUpdatedData{Stack: stack})
 
 	return nil
+}
+
+func (g *Gallery) updateStack(evt event.Event) {
+	data := evt.Data().(StackUpdatedData)
+	g.replace(data.Stack.ID, data.Stack)
 }
 
 type snapshot struct {

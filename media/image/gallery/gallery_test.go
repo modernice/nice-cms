@@ -394,6 +394,39 @@ func TestGallery_Rename(t *testing.T) {
 	}))
 }
 
+func TestGallery_Update(t *testing.T) {
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
+
+	stack, err := g.Upload(context.Background(), storage, buf, exampleName, exampleDisk, examplePath)
+	if err != nil {
+		t.Fatalf("upload failed: %v", err)
+	}
+
+	replacement := stack.WithTag("foo")
+
+	if err := g.Update(stack.ID, func(gallery.Stack) gallery.Stack {
+		return replacement
+	}); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+
+	got, err := g.Stack(stack.ID)
+	if err != nil {
+		t.Fatalf("Stack(%q) failed with %q", stack.ID, err)
+	}
+
+	if !reflect.DeepEqual(got, replacement) {
+		t.Fatalf("Stack returned wrong Stack. want=%v got=%v", replacement, got)
+	}
+
+	test.Change(t, g, gallery.StackUpdated, test.WithEventData(gallery.StackUpdatedData{Stack: replacement}))
+}
+
 func expectStorageFileContents(t *testing.T, storage media.Storage, diskName, path string, contents []byte) {
 	disk, err := storage.Disk(diskName)
 	if err != nil {
