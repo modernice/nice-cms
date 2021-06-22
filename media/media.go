@@ -220,17 +220,12 @@ func (img Image) Replace(ctx context.Context, r io.Reader, storage Storage) (Ima
 // Document is an arbitrary storage file.
 type Document struct {
 	File
-
-	// DocumentName is the unique name of the document. DocumentName may be
-	// empty but if it is not, it must be unique.
-	DocumentName string `json:"documentName"`
 }
 
 // NewDocument returns a Document with the given data.
-func NewDocument(documentName, name, disk, path string, filesize int) Document {
+func NewDocument(name, disk, path string, filesize int) Document {
 	return Document{
-		File:         NewFile(name, disk, path, filesize),
-		DocumentName: documentName,
+		File: NewFile(name, disk, path, filesize),
 	}
 }
 

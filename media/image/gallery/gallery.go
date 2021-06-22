@@ -26,8 +26,11 @@ var (
 	// ErrEmptyName is returned when an empty name is provided to a Gallery.
 	ErrEmptyName = errors.New("empty name")
 
-	// ErrUnnamed is returned when trying to use a Gallery that hasn't been created yet.
-	ErrUnnamed = errors.New("unnamed Gallery")
+	// ErrAlreadyCreated is returned when creating a Gallery that was created already.
+	ErrAlreadyCreated = errors.New("already created")
+
+	// ErrNotCreated is returned when trying to use a Gallery that hasn't been created yet.
+	ErrNotCreated = errors.New("Gallery not created")
 
 	// ErrNotFound is returned when a Gallery cannot be found within a Repository.
 	ErrNotFound = errors.New("Gallery not found")
@@ -100,6 +103,9 @@ func (g *Gallery) ApplyEvent(evt event.Event) {
 
 // Create creates the Gallery with the given name.
 func (g *Gallery) Create(name string) error {
+	if g.Name != "" {
+		return ErrAlreadyCreated
+	}
 	if name = strings.TrimSpace(name); name == "" {
 		return ErrEmptyName
 	}
@@ -137,7 +143,7 @@ func (g *Gallery) Upload(ctx context.Context, storage media.Storage, r io.Reader
 
 func (g *Gallery) checkCreated() error {
 	if g.Name == "" {
-		return ErrUnnamed
+		return ErrNotCreated
 	}
 	return nil
 }
@@ -249,8 +255,8 @@ func (g *Gallery) untagStack(evt event.Event) {
 	g.replace(stack.ID, stack)
 }
 
-// Rename renames each Image in the given Stack to name.
-func (g *Gallery) Rename(ctx context.Context, stackID uuid.UUID, name string) (Stack, error) {
+// RenameStack renames each Image in the given Stack to name.
+func (g *Gallery) RenameStack(ctx context.Context, stackID uuid.UUID, name string) (Stack, error) {
 	if err := g.checkCreated(); err != nil {
 		return Stack{}, err
 	}

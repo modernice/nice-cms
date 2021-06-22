@@ -66,15 +66,23 @@ func TestGallery_Create_emptyName(t *testing.T) {
 	test.NoChange(t, g, gallery.Created)
 }
 
-func TestGallery_Upload_unnamed(t *testing.T) {
+func TestCreate_alreadyCreated(t *testing.T) {
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+	if err := g.Create("foo"); !errors.Is(err, gallery.ErrAlreadyCreated) {
+		t.Fatalf("Create should fail with %q if the Gallery has been created already; got %q", gallery.ErrAlreadyCreated, err)
+	}
+}
+
+func TestGallery_Upload_notCreated(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
 
 	g := gallery.New(uuid.New())
 
 	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
 
-	if _, err := g.Upload(context.Background(), storage, buf, exampleName, exampleDisk, examplePath); !errors.Is(err, gallery.ErrUnnamed) {
-		t.Fatalf("Upload should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	if _, err := g.Upload(context.Background(), storage, buf, exampleName, exampleDisk, examplePath); !errors.Is(err, gallery.ErrNotCreated) {
+		t.Fatalf("Upload should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrNotCreated, err)
 	}
 
 	test.NoChange(t, g, gallery.ImageUploaded)
@@ -187,12 +195,12 @@ func TestGallery_Stack(t *testing.T) {
 	}
 }
 
-func TestGallery_Delete_unnamed(t *testing.T) {
+func TestGallery_Delete_notCreated(t *testing.T) {
 	storage := media.NewStorage()
 	g := gallery.New(uuid.New())
 
-	if err := g.Delete(context.Background(), storage, gallery.Stack{}); !errors.Is(err, gallery.ErrUnnamed) {
-		t.Fatalf("Delete should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	if err := g.Delete(context.Background(), storage, gallery.Stack{}); !errors.Is(err, gallery.ErrNotCreated) {
+		t.Fatalf("Delete should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrNotCreated, err)
 	}
 
 	test.NoChange(t, g, gallery.StackDeleted)
@@ -272,16 +280,16 @@ func TestGallery_Delete_failingStorage(t *testing.T) {
 	test.Change(t, g, gallery.StackDeleted, test.WithEventData(gallery.StackDeletedData{Stack: uploaded}))
 }
 
-func TestGallery_Tag_Untag_unnamed(t *testing.T) {
+func TestGallery_Tag_Untag_notCreated(t *testing.T) {
 	g := gallery.New(uuid.New())
 	var stack gallery.Stack
 
-	if _, err := g.Tag(context.Background(), stack, "foo", "bar", "baz"); !errors.Is(err, gallery.ErrUnnamed) {
-		t.Fatalf("Tag should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	if _, err := g.Tag(context.Background(), stack, "foo", "bar", "baz"); !errors.Is(err, gallery.ErrNotCreated) {
+		t.Fatalf("Tag should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrNotCreated, err)
 	}
 
-	if _, err := g.Untag(context.Background(), stack, "foo", "bar", "baz"); !errors.Is(err, gallery.ErrUnnamed) {
-		t.Fatalf("Untag should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	if _, err := g.Untag(context.Background(), stack, "foo", "bar", "baz"); !errors.Is(err, gallery.ErrNotCreated) {
+		t.Fatalf("Untag should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrNotCreated, err)
 	}
 }
 
@@ -346,15 +354,15 @@ func TestGallery_Tag_Untag(t *testing.T) {
 	}))
 }
 
-func TestGallery_Rename_unnamed(t *testing.T) {
+func TestGallery_RenameStack_notCreated(t *testing.T) {
 	g := gallery.New(uuid.New())
 
-	if _, err := g.Rename(context.Background(), uuid.New(), "new name"); !errors.Is(err, gallery.ErrUnnamed) {
-		t.Fatalf("Rename should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrUnnamed, err)
+	if _, err := g.RenameStack(context.Background(), uuid.New(), "new name"); !errors.Is(err, gallery.ErrNotCreated) {
+		t.Fatalf("Rename should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrNotCreated, err)
 	}
 }
 
-func TestGallery_Rename(t *testing.T) {
+func TestGallery_RenameStack(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
 	g := gallery.New(uuid.New())
 	g.Create("foo")
@@ -373,7 +381,7 @@ func TestGallery_Rename(t *testing.T) {
 		t.Fatalf("upload failed: %v", err)
 	}
 
-	renamed, err := g.Rename(context.Background(), uploaded.ID, "New name")
+	renamed, err := g.RenameStack(context.Background(), uploaded.ID, "New name")
 	if err != nil {
 		t.Fatalf("Rename failed with %q", err)
 	}
