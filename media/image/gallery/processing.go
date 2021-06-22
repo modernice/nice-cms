@@ -3,23 +3,19 @@ package gallery
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	stdimage "image"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/modernice/cms/internal/concurrent"
 	"github.com/modernice/cms/media"
 	"github.com/modernice/cms/media/image"
-)
-
-var (
-	// ErrStackCorrupted is returned when a Processor updates a Stack in an
-	// illegal way.
-	ErrStackCorrupted = errors.New("stack corrupted")
+	"github.com/modernice/goes/event"
 )
 
 // ProcessorContext is passed to Processors when they process a Stack. The
@@ -162,6 +158,10 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 		})
 	}
 
+	sort.SliceStable(resizedImages, func(i, j int) bool {
+		return resizedImages[i].Width <= resizedImages[j].Width
+	})
+
 	if err := ctx.Update(func(s Stack) Stack {
 		s.Images = append(s.Images, resizedImages...)
 		return s
@@ -250,4 +250,194 @@ func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 	}
 
 	return nil
+}
+
+// PostProcessor post-processed Stacks of Galleries.
+type PostProcessor struct {
+	encoder   media.ImageEncoder
+	storage   media.Storage
+	galleries Repository
+}
+
+// NewPostProcessor returns a PostProcessor.
+func NewPostProcessor(enc media.ImageEncoder, storage media.Storage, galleries Repository) *PostProcessor {
+	return &PostProcessor{
+		encoder:   enc,
+		storage:   storage,
+		galleries: galleries,
+	}
+}
+
+// Process calls pipe.Process with the provided Stack.
+func (svc *PostProcessor) Process(ctx context.Context, stack Stack, pipe ProcessingPipeline) (Stack, error) {
+	return pipe.Process(ctx, stack, svc.encoder, svc.storage)
+}
+
+// PostProcessorOption is an option for PostProcessor.Run.
+type PostProcessorOption func(*postProcessorConfig)
+
+type postProcessorConfig struct {
+	workers     int
+	onProcessed []func(Stack, *Gallery)
+}
+
+// ProcessorWorkers returns a PostProcessorOption that configures the worker
+// count for processing Stacks. Default & minimum workers is 1.
+func ProcessorWorkers(workers int) PostProcessorOption {
+	return func(cfg *postProcessorConfig) {
+		cfg.workers = workers
+	}
+}
+
+// OnProcessed returns a PostProcessorOption that registers fn as a callback
+// function that is called when a Stack has been processed.
+func OnProcessed(fn func(Stack, *Gallery)) PostProcessorOption {
+	return func(cfg *postProcessorConfig) {
+		cfg.onProcessed = append(cfg.onProcessed, fn)
+	}
+}
+
+// Run starts the PostProcessor in the background and returns a channel of
+// asynchronous processing errors. PostProcessor runs until ctx is canceled.
+func (svc *PostProcessor) Run(
+	ctx context.Context,
+	bus event.Bus,
+	pipe ProcessingPipeline,
+	opts ...PostProcessorOption,
+) (<-chan error, error) {
+	cfg := newProcessorConfig(opts...)
+
+	events, errs, err := bus.Subscribe(ctx, ImageUploaded)
+	if err != nil {
+		return nil, fmt.Errorf("subscribe to %q event: %w", ImageUploaded, err)
+	}
+
+	queue := make(chan processorJob)
+	out := make(chan error)
+
+	go svc.work(ctx, cfg, queue, pipe, out)
+	go svc.accept(ctx, queue, events, errs, out)
+
+	return out, nil
+}
+
+type processorJob struct {
+	galleryID uuid.UUID
+	stackID   uuid.UUID
+}
+
+func (svc *PostProcessor) work(
+	ctx context.Context,
+	cfg postProcessorConfig,
+	queue chan processorJob,
+	pipe ProcessingPipeline,
+	out chan<- error,
+) {
+	defer close(out)
+
+	fail := func(err error) {
+		select {
+		case <-ctx.Done():
+		case out <- err:
+		}
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(cfg.workers)
+	for i := 0; i < cfg.workers; i++ {
+		go func() {
+			defer wg.Done()
+			for job := range queue {
+				g, err := svc.galleries.Fetch(ctx, job.galleryID)
+				if err != nil {
+					fail(fmt.Errorf("fetch Gallery %q: %w", job.galleryID, err))
+					continue
+				}
+
+				stack, err := g.Stack(job.stackID)
+				if err != nil {
+					fail(fmt.Errorf("get Stack %q: %w", job.stackID, err))
+					continue
+				}
+
+				processed, err := pipe.Process(ctx, stack, svc.encoder, svc.storage)
+				if err != nil {
+					fail(fmt.Errorf("ProcessingPipeline failed: %w", err))
+					continue
+				}
+
+				// Re-fetch Gallery to avoid concurrency errors if the processing took long.
+				g, err = svc.galleries.Fetch(ctx, g.ID)
+				if err != nil {
+					fail(fmt.Errorf("re-fetch Gallery %q: %w", g.ID, err))
+					continue
+				}
+
+				if err := g.Update(processed.ID, func(Stack) Stack { return processed }); err != nil {
+					fail(fmt.Errorf("update Stack %q: %w", processed.ID, err))
+					continue
+				}
+
+				if err := svc.galleries.Save(ctx, g); err != nil {
+					fail(fmt.Errorf("save Gallery %q: %w", g.ID, err))
+					continue
+				}
+
+				for _, fn := range cfg.onProcessed {
+					fn(processed, g)
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+}
+
+// listen for uploaded images and enqueue the processing jobs
+func (svc *PostProcessor) accept(
+	ctx context.Context,
+	queue chan processorJob,
+	events <-chan event.Event,
+	errs <-chan error,
+	out chan<- error,
+) {
+	defer close(queue)
+
+	fail := func(err error) {
+		select {
+		case <-ctx.Done():
+		case out <- err:
+		}
+	}
+
+	event.ForEvery(
+		ctx,
+		func(evt event.Event) {
+			data := evt.Data().(ImageUploadedData)
+			enqueue(ctx, queue, evt.AggregateID(), data.Stack.ID)
+		},
+		fail,
+		events, errs,
+	)
+}
+
+func newProcessorConfig(opts ...PostProcessorOption) postProcessorConfig {
+	var cfg postProcessorConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	if cfg.workers < 1 {
+		cfg.workers = 1
+	}
+	return cfg
+}
+
+func enqueue(ctx context.Context, queue chan<- processorJob, galleryID, stackID uuid.UUID) {
+	select {
+	case <-ctx.Done():
+	case queue <- processorJob{
+		galleryID: galleryID,
+		stackID:   stackID,
+	}:
+	}
 }

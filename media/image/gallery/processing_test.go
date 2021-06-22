@@ -9,12 +9,17 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/modernice/cms/internal/imggen"
 	"github.com/modernice/cms/media"
 	"github.com/modernice/cms/media/image"
 	"github.com/modernice/cms/media/image/gallery"
+	"github.com/modernice/goes/aggregate/repository"
+	"github.com/modernice/goes/event/eventbus/chanbus"
+	"github.com/modernice/goes/event/eventstore"
+	"github.com/modernice/goes/event/eventstore/memstore"
 )
 
 func TestProcessingPipeline_Process(t *testing.T) {
@@ -157,5 +162,113 @@ func TestProcessingPipeline_Process_illegalStackIDUpdate(t *testing.T) {
 	_, err := pipe.Process(context.Background(), stack, enc, storage)
 	if !errors.Is(err, gallery.ErrStackCorrupted) {
 		t.Fatalf("ProcessingPipeline should fail with %q when trying to update the UUID of a Stack; got %q", gallery.ErrStackCorrupted, err)
+	}
+}
+
+func TestPostProcessor_Process(t *testing.T) {
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+	enc := image.NewEncoder()
+	estore := memstore.New()
+	aggregates := repository.New(estore)
+	galleries := gallery.GoesRepository(aggregates)
+
+	svc := gallery.NewPostProcessor(enc, storage, galleries)
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
+
+	stack, err := g.Upload(context.Background(), storage, buf, exampleName, exampleDisk, examplePath)
+	if err != nil {
+		t.Fatalf("upload failed: %v", err)
+	}
+
+	pipe := gallery.ProcessingPipeline{
+		gallery.Resizer{
+			"small":  {Width: 640},
+			"medium": {Width: 1280},
+			"large":  {Width: 1920},
+		},
+	}
+
+	processed, err := svc.Process(context.Background(), stack, pipe)
+	if err != nil {
+		t.Fatalf("processing failed: %v", err)
+	}
+
+	want, err := pipe.Process(context.Background(), stack, enc, storage)
+	if err != nil {
+		t.Fatalf("ProcessorPipeline failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(want, processed) {
+		t.Fatalf("Process returned wrong Stack.\n\nwant=%#v\n\ngot=%#v", want, processed)
+	}
+}
+
+func TestPostProcessor_Run(t *testing.T) {
+	enc := image.NewEncoder()
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+	ebus := chanbus.New()
+	estore := eventstore.WithBus(memstore.New(), ebus)
+	aggregates := repository.New(estore)
+	galleries := gallery.GoesRepository(aggregates)
+	svc := gallery.NewPostProcessor(enc, storage, galleries)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	pipe := gallery.ProcessingPipeline{
+		gallery.Resizer{
+			"small":  {Width: 640},
+			"medium": {Width: 1280},
+			"large":  {Width: 1920},
+		},
+	}
+
+	processedStack := make(chan gallery.Stack)
+
+	errs, err := svc.Run(ctx, ebus, pipe, gallery.OnProcessed(func(s gallery.Stack, _ *gallery.Gallery) {
+		processedStack <- s
+	}))
+
+	if err != nil {
+		t.Fatalf("Run failed with %q", err)
+	}
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
+
+	uploaded, err := g.Upload(context.Background(), storage, buf, exampleName, exampleDisk, examplePath)
+	if err != nil {
+		t.Fatalf("upload failed: %v", err)
+	}
+
+	if err := galleries.Save(ctx, g); err != nil {
+		t.Fatalf("failed to save Gallery: %v", err)
+	}
+
+	timer := time.NewTimer(3 * time.Second)
+	defer timer.Stop()
+
+	var stack gallery.Stack
+	select {
+	case <-timer.C:
+		t.Fatal("timed out")
+	case err := <-errs:
+		t.Fatal(err)
+	case stack = <-processedStack:
+	}
+
+	want, err := pipe.Process(context.Background(), uploaded, enc, storage)
+	if err != nil {
+		t.Fatalf("ProcessingPipeline failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(want, stack) {
+		t.Fatalf("PostProcessor's processed Stack is wrong.\n\nwant=%v\n\ngot=%v", want, stack)
 	}
 }
