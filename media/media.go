@@ -10,47 +10,11 @@ import (
 	"io"
 )
 
-// // DocumentService provides upload and management of Documents.
-// type DocumentService interface {
-// 	// Upload uploads the document in Reader to the given storage disk and path
-// 	// with the provided documentName and filename and returns the uploaded
-// 	// Document.
-// 	//
-// 	// If the upload fails, ErrUploadFailed is returned.
-// 	Upload(_ context.Context, documentName, filename, disk, path string, filesize int) (Document, error)
-
-// 	// Download downloads the Document from the specified disk and path.
-// 	//
-// 	// Download returns ErrFileNotFound if the file does not exist in the
-// 	// storage.
-// 	Download(context.Context, Document) ([]byte, string, error)
-
-// 	// Replace replaces the document at the specified disk and path with the
-// 	// document in Reader and returns the updated Document.
-// 	Replace(_ context.Context, _ io.Reader, disk, path string) (Image, error)
-
-// 	// Rename renames the document at the specified disk and path to the given name
-// 	// and returns the updated Document.
-// 	Rename(_ context.Context, name, disk, path string) (Image, error)
-
-// 	// Delete deletes the document at the specified disk and path. Delete returns
-// 	// ErrFileNotFound if the document does not exist.
-// 	Delete(context.Context, Document) error
-
-// 	// Tag tags the specified document with the given tags and returns the
-// 	// updated Document.
-// 	Tag(_ context.Context, disk, path string, tags ...string) (Document, error)
-
-// 	// Untag removes the given tags from the specified document and returns the
-// 	// updated Document.
-// 	Untag(_ context.Context, disk, path string, tags ...string) (Document, error)
+// // ImageEncoder encodes images, using the appropriate encoder for the specified
+// // image format.
+// type ImageEncoder interface {
+// 	Encode(io.Writer, image.Image, string) error
 // }
-
-// ImageEncoder encodes images, using the appropriate encoder for the specified
-// image format.
-type ImageEncoder interface {
-	Encode(io.Writer, image.Image, string) error
-}
 
 // File is a file that is stored in a storage backend.
 type File struct {

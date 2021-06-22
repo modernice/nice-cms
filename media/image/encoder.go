@@ -33,13 +33,19 @@ func (fn Func) Encode(w io.Writer, img image.Image) error {
 }
 
 // Encoder is a multi-format image encoder.
-type Encoder struct {
+type Encoder interface {
+	// Encode encodes an image using the appropriate FormatEncoder for the
+	// specified format.
+	Encode(io.Writer, image.Image, string) error
+}
+
+type encoder struct {
 	mux      sync.RWMutex
 	encoders map[string]FormatEncoder
 }
 
 // EncoderOption is an Encoder option.
-type EncoderOption func(*Encoder)
+type EncoderOption func(*encoder)
 
 // WithFormat returns an EncoderOption that registers a FormatEncoder for the
 // given image format.
@@ -47,7 +53,7 @@ type EncoderOption func(*Encoder)
 // Format must be the same as would be returned by image.Decode. Provide an
 // empty string as format to set the default encoder for unknown formats.
 func WithFormat(format string, enc FormatEncoder) EncoderOption {
-	return func(e *Encoder) {
+	return func(e *encoder) {
 		e.encoders[format] = enc
 	}
 }
@@ -55,8 +61,12 @@ func WithFormat(format string, enc FormatEncoder) EncoderOption {
 // NewEncoder returns a new Encoder with default support for JPEGs, GIFs and
 // PNGs. When provided an unknown image format, Encoder falls back to the PNG
 // encoder.
-func NewEncoder(opts ...EncoderOption) *Encoder {
-	enc := Encoder{
+func NewEncoder(opts ...EncoderOption) Encoder {
+	return newEncoder(opts...)
+}
+
+func newEncoder(opts ...EncoderOption) *encoder {
+	enc := encoder{
 		encoders: map[string]FormatEncoder{
 			"jpeg": Func(JPEGEncoder),
 			"gif":  Func(GIFEncoder),
@@ -90,9 +100,9 @@ func PNGEncoder(w io.Writer, img image.Image) error {
 // Encode encodes the provided Image using the appropriate encoder for the
 // specified format or the default encoder if the format has no configured
 // FormatEncoder.
-func (enc *Encoder) Encode(w io.Writer, img image.Image, format string) error {
+func (enc *encoder) Encode(w io.Writer, img image.Image, format string) error {
 	if enc == nil {
-		*enc = *NewEncoder()
+		*enc = *newEncoder()
 	}
 
 	fenc, err := enc.get(format)
@@ -107,7 +117,7 @@ func (enc *Encoder) Encode(w io.Writer, img image.Image, format string) error {
 	return nil
 }
 
-func (enc *Encoder) get(format string) (FormatEncoder, error) {
+func (enc *encoder) get(format string) (FormatEncoder, error) {
 	enc.mux.RLock()
 	defer enc.mux.RUnlock()
 	if fenc, ok := enc.encoders[format]; ok {

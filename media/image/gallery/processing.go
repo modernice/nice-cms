@@ -25,14 +25,14 @@ type ProcessorContext struct {
 	context.Context
 
 	stack   Stack
-	encoder media.ImageEncoder
+	encoder image.Encoder
 	storage media.Storage
 }
 
 func newProcessorContext(
 	ctx context.Context,
 	stack Stack,
-	imageEncoder media.ImageEncoder,
+	imageEncoder image.Encoder,
 	storage media.Storage,
 ) *ProcessorContext {
 	if ctx == nil {
@@ -52,7 +52,7 @@ func (ctx *ProcessorContext) Stack() Stack {
 }
 
 // Encoder returns the ImageEncoder.
-func (ctx *ProcessorContext) Encoder() media.ImageEncoder {
+func (ctx *ProcessorContext) Encoder() image.Encoder {
 	return ctx.encoder
 }
 
@@ -88,7 +88,7 @@ type ProcessingPipeline []Processor
 func (pipe ProcessingPipeline) Process(
 	ctx context.Context,
 	stack Stack,
-	imageEncoder media.ImageEncoder,
+	imageEncoder image.Encoder,
 	storage media.Storage,
 ) (Stack, error) {
 	pctx := newProcessorContext(ctx, stack, imageEncoder, storage)
@@ -254,13 +254,13 @@ func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 
 // PostProcessor post-processed Stacks of Galleries.
 type PostProcessor struct {
-	encoder   media.ImageEncoder
+	encoder   image.Encoder
 	storage   media.Storage
 	galleries Repository
 }
 
 // NewPostProcessor returns a PostProcessor.
-func NewPostProcessor(enc media.ImageEncoder, storage media.Storage, galleries Repository) *PostProcessor {
+func NewPostProcessor(enc image.Encoder, storage media.Storage, galleries Repository) *PostProcessor {
 	return &PostProcessor{
 		encoder:   enc,
 		storage:   storage,
