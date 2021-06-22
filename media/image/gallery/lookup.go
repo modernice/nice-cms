@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/modernice/goes/event"
@@ -30,13 +29,13 @@ func (l *Lookup) Name(galleryID uuid.UUID, name string) (uuid.UUID, bool) {
 
 // Project projects the Lookup in a new goroutine and returns a channel of
 // asynchronous errors.
-func (l *Lookup) Project(ctx context.Context, bus event.Bus, store event.Store) (<-chan error, error) {
+func (l *Lookup) Project(ctx context.Context, bus event.Bus, store event.Store, opts ...project.ContinuousOption) (<-chan error, error) {
 	schedule := project.Continuously(bus, store, []string{
 		ImageUploaded,
 		StackDeleted,
 		StackRenamed,
 		StackUpdated, // TODO: remove event type; it's too broad
-	}, project.Debounce(100*time.Millisecond))
+	}, opts...)
 
 	errs, err := schedule.Subscribe(ctx, l.applyJob)
 	if err != nil {
