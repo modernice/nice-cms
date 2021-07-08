@@ -45,7 +45,7 @@ Videos need metadata that can be managed by the website owner:
 - filesize (uneditable / automatically detected)
 - duration (uneditable / automatically detected)
 
-## Documents
+## [Documents](./documents.md)
 
 Documents are any files besides images or videos. Website owners need to be able
 to upload any kind of document so that they can use them or refer to them in
@@ -90,31 +90,33 @@ func NewImageService(images image.Repository, storage media.Storage) *image.Serv
 package example
 
 func NewMediaServer() http.Handler {
-  images := image.NewService(...)
-  videos := video.NewService(...)
+  galleries := gallery.NewService()
+  videos := video.NewService()
   docs := document.NewService(...)
 
-  return media.NewHTTPServer(
-    media.WithImageService(images),
-    media.WithVideoService(videos),
-    media.WithDocumentService(docs),
+  return httpserver.New(
+    httpserver.WithGalleries(galleries),
+    httpserver.WithVideos(videos),
+    httpserver.WithDocuments(docs),
   )
 }
 ```
 
 ```sh
-POST /images # upload images
-DELETE /images/{ID} # delete image
-PUT /images/{ID} # replace image
-PATCH /images/{ID} # update image (rename etc.)
+GET /galleries/lookup/name/{GalleryName} # lookup GalleryID by name
+POST /galleries/{GalleryID}/stacks # upload images
+DELETE /galleries/{GalleryID}/stacks/{StackID} # delete image
+PUT /galleries/{GalleryID}/stacks # replace image
+PATCH /galleries/{GalleryID}/stacks/{StackID} # update image (rename etc.)
 
-POST /videos # upload videos
-DELETE /videos/{ID} # delete video
-PUT /videos/{ID} # replace video
-PATCH /videos/{ID} # update video (rename etc.)
+# POST /videos # upload videos
+# DELETE /videos/{ID} # delete video
+# PUT /videos/{ID} # replace video
+# PATCH /videos/{ID} # update video (rename etc.)
 
-POST /documents # upload documents
-DELETE /documents/{ID} # delete document
-PUT /documents/{ID} # replace document
-PATCH /documents/{ID} # update document (rename etc.)
+GET /shelfs/lookup/name/{ShelfName} # lookup ShelfID by name
+POST /shelfs/{ShelfID}/documents # upload documents
+DELETE /shelfs/{ShelfID}/documents/{DocumentID} # delete document
+PUT /shelfs/{ShelfID}/documents/{DocumentID} # replace document
+PATCH /shelfs/{ShelfID}/documents/{DocumentID} # update document (rename etc.)
 ```

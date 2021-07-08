@@ -37,8 +37,8 @@ var (
 	// ErrShelfNotFound is returned when a Shelf cannot be found in a Repository.
 	ErrShelfNotFound = errors.New("shelf not found")
 
-	// ErrDocumentNotFound is returned when a Document cannot be found within a Shelf.
-	ErrDocumentNotFound = errors.New("document not found")
+	// ErrNotFound is returned when a Document cannot be found within a Shelf.
+	ErrNotFound = errors.New("document not found")
 )
 
 // Repository stores and retrieves Documents.
@@ -87,7 +87,7 @@ func (s *Shelf) Document(id uuid.UUID) (Document, error) {
 			return doc, nil
 		}
 	}
-	return Document{}, ErrDocumentNotFound
+	return Document{}, ErrNotFound
 }
 
 // Find returns the Document with the provided UniqueName or ErrDocumentNotFound.
@@ -100,7 +100,7 @@ func (s *Shelf) Find(uniqueName string) (Document, error) {
 			return doc, nil
 		}
 	}
-	return Document{}, ErrDocumentNotFound
+	return Document{}, ErrNotFound
 }
 
 // ApplyEvent applies aggregate events.
@@ -281,7 +281,7 @@ func (s *Shelf) MakeUnique(id uuid.UUID, uniqueName string) (Document, error) {
 		return doc, ErrEmptyName
 	}
 
-	if _, err := s.Find(uniqueName); !errors.Is(err, ErrDocumentNotFound) {
+	if _, err := s.Find(uniqueName); !errors.Is(err, ErrNotFound) {
 		return doc, ErrDuplicateUniqueName
 	}
 

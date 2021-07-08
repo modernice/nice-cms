@@ -196,8 +196,8 @@ func TestShelf_Remove(t *testing.T) {
 		t.Fatalf("Remove shouldn't fail; failed with %q", err)
 	}
 
-	if _, err := shelf.Document(doc.ID); !errors.Is(err, document.ErrDocumentNotFound) {
-		t.Fatalf("Document should return %q for a deleted Document; got %q", document.ErrDocumentNotFound, err)
+	if _, err := shelf.Document(doc.ID); !errors.Is(err, document.ErrNotFound) {
+		t.Fatalf("Document should return %q for a deleted Document; got %q", document.ErrNotFound, err)
 	}
 
 	disk, err := storage.Disk(doc.Disk)
@@ -237,8 +237,8 @@ func TestShelf_Remove_failingStorage(t *testing.T) {
 		t.Fatalf("Remove shouldn't fail; failed with %q", err)
 	}
 
-	if _, err := shelf.Document(doc.ID); !errors.Is(err, document.ErrDocumentNotFound) {
-		t.Fatalf("Document should return %q for a deleted Document; got %q", document.ErrDocumentNotFound, err)
+	if _, err := shelf.Document(doc.ID); !errors.Is(err, document.ErrNotFound) {
+		t.Fatalf("Document should return %q for a deleted Document; got %q", document.ErrNotFound, err)
 	}
 
 	test.Change(t, shelf, document.DocumentRemoved, test.WithEventData(document.DocumentRemovedData{

@@ -6,6 +6,8 @@ main entrypoint for managing image assets.
 ## Requirements
 
 - automatically resize uploaded images
+- rename images
+- replace images
 
 ## Design
 
