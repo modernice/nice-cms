@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/modernice/cms/media"
 	"github.com/modernice/cms/media/document"
@@ -30,13 +31,16 @@ import (
 //go:embed testdata/example.pdf
 var examplePDF []byte
 
+//go:embed testdata/example2.pdf
+var examplePDF2 []byte
+
 var (
 	exampleDisk = "foo-disk"
 	exampleName = "Example document"
 	examplePath = "/example/example.pdf"
 )
 
-func TestMediaServer_lookupGalleryName(t *testing.T) {
+func TestMediaServer_lookupShelf(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -112,7 +116,7 @@ func TestMediaServer_uploadDocument(t *testing.T) {
 
 	var formData bytes.Buffer
 	multipartWriter := multipart.NewWriter(&formData)
-	formFile, _ := multipartWriter.CreateFormFile("document", "Example Doc")
+	formFile, _ := multipartWriter.CreateFormFile("document", "document")
 	io.Copy(formFile, newPDF())
 
 	name := "Example document"
@@ -314,6 +318,66 @@ func TestMediaServer_tagDocument(t *testing.T) {
 	}
 }
 
+func TestMediaServer_replaceDocument(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	srv, shelfs, _, helper := newDocumentTest(t, ctx)
+	_, _, _, storage, _ := helper()
+
+	shelf := document.NewShelf(uuid.New())
+	shelf.Create("foo")
+
+	pdf := newPDF()
+
+	doc, err := shelf.Add(ctx, storage, pdf, "", exampleName, exampleDisk, examplePath)
+	if err != nil {
+		t.Fatalf("Add failed with %q", err)
+	}
+
+	if err := shelfs.Save(ctx, shelf); err != nil {
+		t.Fatalf("save Shelf: %v", err)
+	}
+
+	var formData bytes.Buffer
+	formWriter := multipart.NewWriter(&formData)
+
+	documentField, _ := formWriter.CreateFormFile("document", "document")
+	documentField.Write(examplePDF2)
+
+	formWriter.Close()
+
+	req := httptest.NewRequest("PUT", fmt.Sprintf("/shelfs/%s/documents/%s", shelf.ID, doc.ID), &formData)
+	req.Header.Set("Content-Type", formWriter.FormDataContentType())
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	res := rec.Result()
+
+	if res.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(res.Body)
+		t.Fatalf("StatusCode should be %d; is %d\n%s", http.StatusOK, res.StatusCode, body)
+	}
+
+	var resp document.Document
+	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	shelf, _ = shelfs.Fetch(ctx, shelf.ID)
+	doc, _ = shelf.Document(doc.ID)
+
+	if !reflect.DeepEqual(doc, resp) {
+		t.Fatalf("invalid response. want=%v got=%v\n\n%s", doc, resp, cmp.Diff(doc, resp))
+	}
+
+	disk, _ := storage.Disk(doc.Disk)
+	content, _ := disk.Get(ctx, doc.Path)
+
+	if !bytes.Equal(content, examplePDF2) {
+		t.Fatalf("storage file should have been replaced\n\n%s", cmp.Diff(content, examplePDF2))
+	}
+}
+
 func TestMediaServer_renameDocument(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -340,7 +404,7 @@ func TestMediaServer_renameDocument(t *testing.T) {
 
 	body := strings.NewReader(fmt.Sprintf(`{"name": %q}`, newName))
 
-	req := httptest.NewRequest("PUT", fmt.Sprintf("/shelfs/%s/documents/%s", shelf.ID, doc.ID), body)
+	req := httptest.NewRequest("PATCH", fmt.Sprintf("/shelfs/%s/documents/%s", shelf.ID, doc.ID), body)
 	rec := httptest.NewRecorder()
 
 	srv.ServeHTTP(rec, req)
@@ -401,7 +465,7 @@ func TestMediaServer_makeDocumentUnique(t *testing.T) {
 
 	body := strings.NewReader(fmt.Sprintf(`{"uniqueName": %q}`, uniqueName))
 
-	req := httptest.NewRequest("PUT", fmt.Sprintf("/shelfs/%s/documents/%s", shelf.ID, doc.ID), body)
+	req := httptest.NewRequest("PATCH", fmt.Sprintf("/shelfs/%s/documents/%s", shelf.ID, doc.ID), body)
 	rec := httptest.NewRecorder()
 
 	srv.ServeHTTP(rec, req)
@@ -460,7 +524,7 @@ func TestMediaServer_makeDocumentNonUnique(t *testing.T) {
 
 	body := strings.NewReader(`{"uniqueName": ""}`)
 
-	req := httptest.NewRequest("PUT", fmt.Sprintf("/shelfs/%s/documents/%s", shelf.ID, doc.ID), body)
+	req := httptest.NewRequest("PATCH", fmt.Sprintf("/shelfs/%s/documents/%s", shelf.ID, doc.ID), body)
 	rec := httptest.NewRecorder()
 
 	srv.ServeHTTP(rec, req)
@@ -499,7 +563,7 @@ func newDocumentTest(t *testing.T, ctx context.Context) (
 	http.Handler,
 	document.Repository,
 	*document.Lookup,
-	func() (event.Bus, event.Store, aggregate.Repository, <-chan error),
+	func() (event.Bus, event.Store, aggregate.Repository, media.Storage, <-chan error),
 ) {
 	ebus := chanbus.New()
 	estore := eventstore.WithBus(memstore.New(), ebus)
@@ -509,10 +573,11 @@ func newDocumentTest(t *testing.T, ctx context.Context) (
 
 	lookup, errs := newDocumentLookup(t, ctx, ebus, estore)
 
-	srv := mediaserver.New(mediaserver.WithDocuments(shelfs, lookup, newStorage()))
+	storage := newStorage()
+	srv := mediaserver.New(mediaserver.WithDocuments(shelfs, lookup, storage))
 
-	return srv, shelfs, lookup, func() (event.Bus, event.Store, aggregate.Repository, <-chan error) {
-		return ebus, estore, repo, errs
+	return srv, shelfs, lookup, func() (event.Bus, event.Store, aggregate.Repository, media.Storage, <-chan error) {
+		return ebus, estore, repo, storage, errs
 	}
 }
 

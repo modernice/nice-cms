@@ -88,6 +88,8 @@ func (g *Gallery) ApplyEvent(evt event.Event) {
 		g.create(evt)
 	case ImageUploaded:
 		g.uploadImage(evt)
+	case ImageReplaced:
+		g.replaceImage(evt)
 	case StackDeleted:
 		g.deleteStack(evt)
 	case StackTagged:
@@ -120,6 +122,23 @@ func (g *Gallery) create(evt event.Event) {
 
 // Upload uploads the image in r to storage and returns the Stack for that image.
 func (g *Gallery) Upload(ctx context.Context, storage media.Storage, r io.Reader, name, diskName, path string) (Stack, error) {
+	stack, err := g.uploadWithID(ctx, storage, r, name, diskName, path, uuid.New())
+	if err != nil {
+		return stack, err
+	}
+
+	aggregate.NextEvent(g, ImageUploaded, ImageUploadedData{Stack: stack})
+
+	return stack, nil
+}
+
+func (g *Gallery) uploadWithID(
+	ctx context.Context,
+	storage media.Storage,
+	r io.Reader,
+	name, diskName, path string,
+	id uuid.UUID,
+) (Stack, error) {
 	if err := g.checkCreated(); err != nil {
 		return Stack{}, err
 	}
@@ -132,11 +151,9 @@ func (g *Gallery) Upload(ctx context.Context, storage media.Storage, r io.Reader
 	}
 
 	stack := Stack{
-		ID:     uuid.New(),
+		ID:     id,
 		Images: []Image{{Image: img, Original: true}},
 	}
-
-	aggregate.NextEvent(g, ImageUploaded, ImageUploadedData{Stack: stack})
 
 	return stack, nil
 }
@@ -153,6 +170,33 @@ func (g *Gallery) uploadImage(evt event.Event) {
 	g.Stacks = append(g.Stacks, data.Stack)
 }
 
+// Replace replaced the Images in the given Stack with the image in r.
+func (g *Gallery) Replace(ctx context.Context, storage media.Storage, r io.Reader, stackID uuid.UUID) (Stack, error) {
+	stack, err := g.Stack(stackID)
+	if err != nil {
+		return stack, err
+	}
+
+	org := stack.Original()
+	if org.Path == "" {
+		return stack, ErrStackCorrupted
+	}
+
+	replaced, err := g.uploadWithID(ctx, storage, r, org.Name, org.Disk, org.Path, stack.ID)
+	if err != nil {
+		return stack, fmt.Errorf("upload image: %w", err)
+	}
+
+	aggregate.NextEvent(g, ImageReplaced, ImageReplacedData{Stack: replaced})
+
+	return g.Stack(replaced.ID)
+}
+
+func (g *Gallery) replaceImage(evt event.Event) {
+	data := evt.Data().(ImageReplacedData)
+	g.replace(data.Stack.ID, data.Stack)
+}
+
 // Delete deletes the given Stack from the Gallery and Storage.
 func (g *Gallery) Delete(ctx context.Context, storage media.Storage, stack Stack) error {
 	if err := g.checkCreated(); err != nil {
@@ -160,8 +204,8 @@ func (g *Gallery) Delete(ctx context.Context, storage media.Storage, stack Stack
 	}
 
 	var wg sync.WaitGroup
+	wg.Add(len(stack.Images))
 	for _, img := range stack.Images {
-		wg.Add(1)
 		go func(img Image) {
 			defer wg.Done()
 			// TODO: report error (?)

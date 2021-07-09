@@ -307,7 +307,7 @@ func (svc *PostProcessor) Run(
 ) (<-chan error, error) {
 	cfg := newProcessorConfig(opts...)
 
-	events, errs, err := bus.Subscribe(ctx, ImageUploaded)
+	events, errs, err := bus.Subscribe(ctx, ImageUploaded, ImageReplaced)
 	if err != nil {
 		return nil, fmt.Errorf("subscribe to %q event: %w", ImageUploaded, err)
 	}
@@ -413,8 +413,12 @@ func (svc *PostProcessor) accept(
 	event.ForEvery(
 		ctx,
 		func(evt event.Event) {
-			data := evt.Data().(ImageUploadedData)
-			enqueue(ctx, queue, evt.AggregateID(), data.Stack.ID)
+			switch data := evt.Data().(type) {
+			case ImageUploadedData:
+				enqueue(ctx, queue, evt.AggregateID(), data.Stack.ID)
+			case ImageReplacedData:
+				enqueue(ctx, queue, evt.AggregateID(), data.Stack.ID)
+			}
 		},
 		fail,
 		events, errs,

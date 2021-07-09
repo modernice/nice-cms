@@ -110,6 +110,8 @@ func (s *Shelf) ApplyEvent(evt event.Event) {
 		s.create(evt)
 	case DocumentAdded:
 		s.addDocument(evt)
+	case DocumentReplaced:
+		s.replaceDocument(evt)
 	case DocumentRemoved:
 		s.removeDocument(evt)
 	case DocumentRenamed:
@@ -153,14 +155,25 @@ func (s *Shelf) create(evt event.Event) {
 // unique names. If uniqueName is already in use by another Document,
 // ErrDuplicateUniqueName is returned.
 func (s *Shelf) Add(ctx context.Context, storage media.Storage, r io.Reader, uniqueName, name, disk, path string) (Document, error) {
-	if err := s.checkCreated(); err != nil {
-		return Document{}, err
-	}
-
 	if uniqueName != "" {
 		if _, err := s.Find(uniqueName); err == nil {
 			return Document{}, ErrDuplicateUniqueName
 		}
+	}
+
+	doc, err := s.addWithID(ctx, storage, r, uniqueName, name, disk, path, uuid.New())
+	if err != nil {
+		return doc, err
+	}
+
+	aggregate.NextEvent(s, DocumentAdded, DocumentAddedData{Document: doc})
+
+	return s.Document(doc.ID)
+}
+
+func (s *Shelf) addWithID(ctx context.Context, storage media.Storage, r io.Reader, uniqueName, name, disk, path string, id uuid.UUID) (Document, error) {
+	if err := s.checkCreated(); err != nil {
+		return Document{}, err
 	}
 
 	doc := media.NewDocument(name, disk, path, 0)
@@ -171,13 +184,11 @@ func (s *Shelf) Add(ctx context.Context, storage media.Storage, r io.Reader, uni
 
 	sdoc := Document{
 		Document:   doc,
-		ID:         uuid.New(),
+		ID:         id,
 		UniqueName: uniqueName,
 	}
 
-	aggregate.NextEvent(s, DocumentAdded, DocumentAddedData{Document: sdoc})
-
-	return s.Document(sdoc.ID)
+	return sdoc, nil
 }
 
 func (s *Shelf) addDocument(evt event.Event) {
@@ -227,6 +238,28 @@ func (s *Shelf) remove(id uuid.UUID) {
 			return
 		}
 	}
+}
+
+// Replace replaces the document with the given UUID with the document in r.
+func (s *Shelf) Replace(ctx context.Context, storage media.Storage, r io.Reader, id uuid.UUID) (Document, error) {
+	doc, err := s.Document(id)
+	if err != nil {
+		return doc, err
+	}
+
+	replaced, err := s.addWithID(ctx, storage, r, doc.UniqueName, doc.Name, doc.Disk, doc.Path, doc.ID)
+	if err != nil {
+		return doc, fmt.Errorf("upload document: %w", err)
+	}
+
+	aggregate.NextEvent(s, DocumentReplaced, DocumentReplacedData{Document: replaced})
+
+	return s.Document(replaced.ID)
+}
+
+func (s *Shelf) replaceDocument(evt event.Event) {
+	data := evt.Data().(DocumentReplacedData)
+	s.replace(data.Document.ID, data.Document)
 }
 
 // RenameDocument renames the Document with the given UUID. It does not rename

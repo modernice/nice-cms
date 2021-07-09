@@ -8,6 +8,7 @@ import (
 const (
 	Created       = "cms.media.image.gallery.created"
 	ImageUploaded = "cms.media.image.gallery.image_uploaded"
+	ImageReplaced = "cms.media.image.gallery.stack_replaced"
 	StackDeleted  = "cms.media.image.gallery.stack_deleted"
 	StackTagged   = "cms.media.image.gallery.stack_tagged"
 	StackUntagged = "cms.media.image.gallery.stack_untagged"
@@ -20,6 +21,10 @@ type CreatedData struct {
 }
 
 type ImageUploadedData struct {
+	Stack Stack
+}
+
+type ImageReplacedData struct {
 	Stack Stack
 }
 
@@ -50,6 +55,7 @@ type StackUpdatedData struct {
 func RegisterEvents(r event.Registry) {
 	r.Register(Created, func() event.Data { return CreatedData{} })
 	r.Register(ImageUploaded, func() event.Data { return ImageUploadedData{} })
+	r.Register(ImageReplaced, func() event.Data { return ImageReplacedData{} })
 	r.Register(StackDeleted, func() event.Data { return StackDeletedData{} })
 	r.Register(StackTagged, func() event.Data { return StackTaggedData{} })
 	r.Register(StackUntagged, func() event.Data { return StackUntaggedData{} })

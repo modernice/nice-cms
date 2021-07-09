@@ -19,6 +19,9 @@ import (
 //go:embed testdata/example.pdf
 var examplePDF []byte
 
+//go:embed testdata/example2.pdf
+var examplePDF2 []byte
+
 var (
 	exampleShelfName  = "foo-shelf"
 	exampleUniqueName = "example-doc"
@@ -244,6 +247,47 @@ func TestShelf_Remove_failingStorage(t *testing.T) {
 	test.Change(t, shelf, document.DocumentRemoved, test.WithEventData(document.DocumentRemovedData{
 		Document:    doc,
 		DeleteError: mockError.Error(),
+	}))
+}
+
+func TestShelf_Replace(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+	shelf := document.NewShelf(uuid.New())
+	shelf.Create(exampleShelfName)
+
+	pdf := newPDF()
+
+	doc, err := shelf.Add(ctx, storage, pdf, exampleUniqueName, exampleName, exampleDisk, examplePath)
+	if err != nil {
+		t.Fatalf("Add failed with %q", err)
+	}
+
+	pdf = newPDF2()
+
+	replaced, err := shelf.Replace(ctx, storage, pdf, doc.ID)
+	if err != nil {
+		t.Fatalf("Replace failed with %q", err)
+	}
+
+	disk, _ := storage.Disk(doc.Disk)
+	content, err := disk.Get(ctx, doc.Path)
+	if err != nil {
+		t.Fatalf("storage failed with %q", err)
+	}
+
+	if !bytes.Equal(content, examplePDF2) {
+		t.Fatalf("storage file should have been replaced")
+	}
+
+	if replaced.Filesize != len(examplePDF2) {
+		t.Fatalf("Filesize should be %d; is %d", len(examplePDF2), replaced.Filesize)
+	}
+
+	test.Change(t, shelf, document.DocumentReplaced, test.WithEventData(document.DocumentReplacedData{
+		Document: replaced,
 	}))
 }
 
@@ -551,6 +595,10 @@ func TestShelf_Search(t *testing.T) {
 
 func newPDF() *bytes.Reader {
 	return bytes.NewReader(examplePDF)
+}
+
+func newPDF2() *bytes.Reader {
+	return bytes.NewReader(examplePDF2)
 }
 
 func expectDocument(t *testing.T, doc document.Document, docs ...document.Document) {

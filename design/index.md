@@ -65,7 +65,7 @@ or deployment method.
 
 ### Non-goals
 
-- authorization (should be implemented by the developers themselves)
+- authorization (should be implemented by the developers)
 - visual content builder
 - web UI
 

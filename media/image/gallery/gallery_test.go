@@ -293,6 +293,56 @@ func TestGallery_Tag_Untag_notCreated(t *testing.T) {
 	}
 }
 
+func TestGallery_Replace(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.RGBA{100, 100, 100, 0xff})
+
+	uploaded, err := g.Upload(
+		ctx,
+		storage,
+		buf,
+		exampleName,
+		exampleDisk,
+		examplePath,
+	)
+	if err != nil {
+		t.Fatalf("upload failed: %v", err)
+	}
+
+	_, buf = imggen.ColoredRectangle(400, 500, color.RGBA{130, 100, 100, 0xff})
+	b := buf.Bytes()
+
+	replaced, err := g.Replace(ctx, storage, buf, uploaded.ID)
+	if err != nil {
+		t.Fatalf("Replace failed with %q", err)
+	}
+
+	if replaced.Original().Filesize != len(b) {
+		t.Fatalf("Filesize should be %d; is %d", len(b), replaced.Original().Filesize)
+	}
+
+	disk, _ := storage.Disk(uploaded.Original().Disk)
+	file, err := disk.Get(ctx, uploaded.Original().Path)
+	if err != nil {
+		t.Fatalf("get storage file: %v", err)
+	}
+
+	if !bytes.Equal(file, b) {
+		t.Fatalf("storage file should have been replaced")
+	}
+
+	test.Change(t, g, gallery.ImageReplaced, test.WithEventData(gallery.ImageReplacedData{
+		Stack: replaced,
+	}))
+}
+
 func TestGallery_Tag_Untag(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
 

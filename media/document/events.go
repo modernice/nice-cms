@@ -10,6 +10,7 @@ const (
 	ShelfCreated          = "cms.media.document.shelf.created"
 	DocumentAdded         = "cms.media.document.shelf.document_added"
 	DocumentRemoved       = "cms.media.document.shelf.document_removed"
+	DocumentReplaced      = "cms.media.document.shelf.document_replaced"
 	DocumentRenamed       = "cms.media.document.shelf.document_renamed"
 	DocumentMadeUnique    = "cms.media.document.shelf.document_made_unique"
 	DocumentMadeNonUnique = "cms.media.document.shelf.document_made_non_unique"
@@ -24,6 +25,11 @@ type ShelfCreatedData struct {
 
 // DocumentAddedData is the event data for the DocumentAdded event.
 type DocumentAddedData struct {
+	Document Document
+}
+
+// DocumentReplacedData is the event data for the DocumentReplaced event.
+type DocumentReplacedData struct {
 	Document Document
 }
 
@@ -68,6 +74,7 @@ type DocumentUntaggedData struct {
 func RegisterEvents(r event.Registry) {
 	r.Register(ShelfCreated, func() event.Data { return ShelfCreatedData{} })
 	r.Register(DocumentAdded, func() event.Data { return DocumentAddedData{} })
+	r.Register(DocumentReplaced, func() event.Data { return DocumentReplacedData{} })
 	r.Register(DocumentRemoved, func() event.Data { return DocumentRemovedData{} })
 	r.Register(DocumentRenamed, func() event.Data { return DocumentRenamedData{} })
 	r.Register(DocumentMadeUnique, func() event.Data { return DocumentMadeUniqueData{} })
