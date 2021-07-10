@@ -67,8 +67,8 @@ func NewTree(items ...Item) *Tree {
 func Create(name string, items ...Item) (*Nav, error) {
 	nav := New(uuid.New())
 
-	if err := nav.create(name); err != nil {
-		return nav, fmt.Errorf("create Tree: %w", err)
+	if err := nav.Create(name); err != nil {
+		return nav, err
 	}
 
 	if len(items) > 0 {
@@ -110,7 +110,8 @@ func (nav *Nav) HasItem(items ...string) bool {
 	return true
 }
 
-func (nav *Nav) create(name string) error {
+// Create creates the navigation by giving it a name.
+func (nav *Nav) Create(name string) error {
 	if name = strings.TrimSpace(name); name == "" {
 		return ErrEmptyName
 	}
