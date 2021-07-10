@@ -16,6 +16,14 @@ const (
 	Sorted = "cms.static.nav.sorted"
 )
 
+// Events are all navigation events.
+var Events = [...]string{
+	Created,
+	ItemsAdded,
+	ItemsRemoved,
+	Sorted,
+}
+
 // CreatedData is the event data for Created.
 type CreatedData struct {
 	Name string
