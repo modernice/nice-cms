@@ -161,6 +161,8 @@ github.com/mattn/go-isatty v0.0.10/go.mod h1:qgIWMr58cqv1PHHyhnkY9lrL7etaEgOFcME
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/modernice/goes v0.0.0-20210706190501-1280580e59b5 h1:pERN4piNkBt8RVfXJaj5befr/x8h/YOm10vi8pzYNKU=
 github.com/modernice/goes v0.0.0-20210706190501-1280580e59b5/go.mod h1:ILUjA5+iyN6P6SvraiG8PTT/IFlqkNCc7MIr1hsqlNA=
+github.com/modernice/goes v0.0.0-20210709215508-55a0f967247d h1:OzOa3V9+DHrZvx8eaxJ3EgFpTD8E5ufzDPZ2jbTqDU4=
+github.com/modernice/goes v0.0.0-20210709215508-55a0f967247d/go.mod h1:ILUjA5+iyN6P6SvraiG8PTT/IFlqkNCc7MIr1hsqlNA=
 github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
 github.com/nats-io/jwt v0.3.2/go.mod h1:/euKqTS1ZD+zzjYrY7pseZrTtWQSjujC7xjPc8wL6eU=
 github.com/nats-io/jwt v1.1.0/go.mod h1:n3cvmLfBfnpV4JJRN7lRYCyZnw48ksGsbThGXEk4w9M=

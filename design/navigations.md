@@ -46,7 +46,7 @@ package example
 
 func NewNavigations(blog *blog.Blog) static.Navigations {
   return static.Navigations{
-    nav.NewTree("main", func(nav *nav.Tree) nav.Items {
+    nav.New("main", func(nav *nav.Tree) nav.Items {
       return nav.Items{
         nav.NewStaticLink("contact", func(l *nav.StaticLink) string {
           switch l.Locale {
@@ -96,7 +96,7 @@ func NewNavigations(blog *blog.Blog) static.Navigations {
       }
     }),
 
-    nav.NewTree("footer", func(nav *nav.Tree) nav.Items {
+    nav.New("footer", func(nav *nav.Tree) nav.Items {
       return nav.Items{
         nav.NewStaticLink("legal", func(l *nav.StaticLink) string {
           switch l.Locale {
