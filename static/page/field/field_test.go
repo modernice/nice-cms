@@ -10,6 +10,29 @@ import (
 	"github.com/modernice/cms/static/page/field/meta"
 )
 
+func TestNew(t *testing.T) {
+	name := "foo"
+	typ := field.Text
+	def := "Foo"
+	f := field.New(name, typ, def)
+
+	if f.Name != name {
+		t.Fatalf("Name should be %q; is %q", name, f.Name)
+	}
+
+	if f.Type != typ {
+		t.Fatalf("Type should be %q; is %q", typ, f.Type)
+	}
+
+	if val := f.Value(""); val != def {
+		t.Fatalf("Value(%q) should return %q; got %q", "", def, val)
+	}
+
+	if f.Guarded {
+		t.Fatalf("Guarded should be %v; is %v", false, f.Guarded)
+	}
+}
+
 func TestField_Value(t *testing.T) {
 	name := "foo"
 	typ := field.Type("foo-type")
@@ -211,5 +234,12 @@ func TestNewMeta(t *testing.T) {
 		if got != want {
 			t.Fatalf("Value(%q) should return %v; got %v", locale, want, got)
 		}
+	}
+}
+
+func TestGuarded(t *testing.T) {
+	f := field.New("foo", field.Text, "Foo", field.Guarded())
+	if !f.Guarded {
+		t.Fatalf("Guarded should be %v; is %v", true, f.Guarded)
 	}
 }

@@ -29,9 +29,10 @@ type Type string
 
 // Field is a field of a page.
 type Field struct {
-	Name   string
-	Type   Type
-	Values map[string]string
+	Name    string
+	Type    Type
+	Values  map[string]string
+	Guarded bool
 }
 
 // Option is a Field option.
@@ -44,6 +45,14 @@ func Localize(val string, locales ...string) Option {
 		for _, locale := range locales {
 			f.Values[locale] = val
 		}
+	}
+}
+
+// Guarded returns an Option that makes a Field guarded. A guarded Field cannot
+// be removed from a Page.
+func Guarded() Option {
+	return func(f *Field) {
+		f.Guarded = true
 	}
 }
 
