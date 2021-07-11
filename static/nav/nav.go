@@ -65,6 +65,14 @@ func NewTree(items ...Item) *Tree {
 // Create creates a Nav with the provided name and adds the given Items to it.
 // The provided Items are added as initial items and cannot be removed from the
 // Nav.
+//
+// Create should typically not be called manually, but rather by the command
+// handler because the command handler validates the uniqueness of the provided
+// name through a *Lookup:
+//
+//	var bus command.Bus
+//	cmd := nav.CreateCmd(name, items...)
+//	bus.Dispatch(context.TODO(), cmd)
 func Create(name string, items ...Item) (*Nav, error) {
 	return CreateWithID(uuid.New(), name, items...)
 }
