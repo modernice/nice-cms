@@ -2,6 +2,7 @@ package nav
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -45,10 +46,10 @@ type Repository interface {
 
 // Nav is a navigation.
 type Nav struct {
-	*aggregate.Base `json:"-"`
+	*aggregate.Base
 	*Tree
 
-	Name string `json:"name"`
+	Name string
 }
 
 // Tree is an Item tree.
@@ -566,4 +567,30 @@ func (r *goesRepository) Fetch(ctx context.Context, id uuid.UUID) (*Nav, error) 
 
 func (r *goesRepository) Delete(ctx context.Context, tree *Nav) error {
 	return r.repo.Delete(ctx, tree)
+}
+
+type jsonNav struct {
+	ID    uuid.UUID `json:"id"`
+	Name  string    `json:"name"`
+	Items []Item    `json:"items"`
+}
+
+func (n *Nav) MarshalJSON() ([]byte, error) {
+	return json.Marshal(jsonNav{
+		ID:    n.ID,
+		Name:  n.Name,
+		Items: n.Items,
+	})
+}
+
+func (n *Nav) UnmarshalJSON(b []byte) error {
+	var jn jsonNav
+	if err := json.Unmarshal(b, &jn); err != nil {
+		return err
+	}
+	nav := New(jn.ID)
+	nav.Name = jn.Name
+	nav.Items = jn.Items
+	*n = *nav
+	return nil
 }

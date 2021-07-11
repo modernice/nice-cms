@@ -1,6 +1,8 @@
 package page
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -33,6 +35,18 @@ var (
 	// ErrGuarded is retured when trying to remove a guarded Field from a Page.
 	ErrGuarded = errors.New("guarded field")
 )
+
+// A Repository persists Pages.
+type Repository interface {
+	// Save saves a Page.
+	Save(context.Context, *Page) error
+
+	// Fetch fetches the Page with the given UUID.
+	Fetch(context.Context, uuid.UUID) (*Page, error)
+
+	// Delete deletes a Page.
+	Delete(context.Context, *Page) error
+}
 
 // Page is a web page.
 type Page struct {
@@ -176,6 +190,32 @@ func (p *Page) ApplyEvent(evt event.Event) {
 	}
 }
 
+type goesRepository struct {
+	repo aggregate.Repository
+}
+
+// GoesRepository returns a Repository that uses the provided aggregate
+// repository under the hood.
+func GoesRepository(repo aggregate.Repository) Repository {
+	return &goesRepository{repo}
+}
+
+func (r *goesRepository) Save(ctx context.Context, p *Page) error {
+	return r.repo.Save(ctx, p)
+}
+
+func (r *goesRepository) Fetch(ctx context.Context, id uuid.UUID) (*Page, error) {
+	p := New(id)
+	if err := r.repo.Fetch(ctx, p); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func (r *goesRepository) Delete(ctx context.Context, p *Page) error {
+	return r.repo.Delete(ctx, p)
+}
+
 func guarded(fields ...field.Field) []field.Field {
 	out := make([]field.Field, len(fields))
 	for i, f := range fields {
@@ -183,4 +223,31 @@ func guarded(fields ...field.Field) []field.Field {
 		out[i] = f
 	}
 	return out
+}
+
+type jsonPage struct {
+	ID     uuid.UUID     `json:"id"`
+	Name   string        `json:"name"`
+	Fields []field.Field `json:"fields"`
+}
+
+func (p *Page) MarshalJSON() ([]byte, error) {
+	return json.Marshal(jsonPage{
+		ID:     p.ID,
+		Name:   p.Name,
+		Fields: p.Fields,
+	})
+}
+
+func (p *Page) UnmarshalJSON(b []byte) error {
+	var jp jsonPage
+	if err := json.Unmarshal(b, &jp); err != nil {
+		return err
+	}
+	page := New(jp.ID)
+	page.ID = jp.ID
+	page.Name = jp.Name
+	page.Fields = jp.Fields
+	*p = *page
+	return nil
 }
