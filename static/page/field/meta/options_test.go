@@ -6,14 +6,15 @@ import (
 
 	"github.com/modernice/cms/static/page/field"
 	"github.com/modernice/cms/static/page/field/meta"
+	"github.com/modernice/cms/static/page/metadata"
 )
 
 func TestLocalize(t *testing.T) {
-	def := meta.Data{
+	def := metadata.Data{
 		Title:       "Foo",
 		Description: "Foo says hello.",
 	}
-	otherVal := meta.Data{
+	otherVal := metadata.Data{
 		Title:       "Bar",
 		Description: "Bar says hello.",
 	}

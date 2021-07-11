@@ -1,17 +1,12 @@
 package field
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/bojanz/currency"
-	"github.com/modernice/cms/static/page/field/float"
-	"github.com/modernice/cms/static/page/field/integer"
-	"github.com/modernice/cms/static/page/field/meta"
-	"github.com/modernice/cms/static/page/field/money"
-	"github.com/modernice/cms/static/page/field/text"
-	"github.com/modernice/cms/static/page/field/toggle"
+	"github.com/modernice/cms/internal/money"
+	"github.com/modernice/cms/static/page/metadata"
 )
 
 // Built-in field types
@@ -79,25 +74,13 @@ func (f Field) Value(locale string) string {
 }
 
 // NewText returns a Text field.
-func NewText(name, defaultValue string, opts ...text.Option) Field {
-	cfg := text.Configure(opts...)
-	var fieldOpts []Option
-	for locale, val := range cfg.Localization {
-		fieldOpts = append(fieldOpts, Localize(val, locale))
-	}
-	f := New(name, Text, defaultValue, fieldOpts...)
-	return f
+func NewText(name, defaultValue string, opts ...Option) Field {
+	return New(name, Text, defaultValue, opts...)
 }
 
 // NewToggle returns a Toggle field.
-func NewToggle(name string, defaultValue bool, opts ...toggle.Option) Field {
-	cfg := toggle.Configure(opts...)
-	var fieldOpts []Option
-	for locale, val := range cfg.Localization {
-		fieldOpts = append(fieldOpts, Localize(boolToString(val), locale))
-	}
-	f := New(name, Toggle, boolToString(defaultValue), fieldOpts...)
-	return f
+func NewToggle(name string, defaultValue bool, opts ...Option) Field {
+	return New(name, Toggle, boolToString(defaultValue), opts...)
 }
 
 func boolToString(v bool) string {
@@ -108,23 +91,13 @@ func boolToString(v bool) string {
 }
 
 // NewInt returns an Int field.
-func NewInt(name string, defaultValue int, opts ...integer.Option) Field {
-	cfg := integer.Configure(opts...)
-	var fieldOpts []Option
-	for locale, val := range cfg.Localization {
-		fieldOpts = append(fieldOpts, Localize(strconv.Itoa(val), locale))
-	}
-	return New(name, Int, strconv.Itoa(defaultValue), fieldOpts...)
+func NewInt(name string, defaultValue int, opts ...Option) Field {
+	return New(name, Int, strconv.Itoa(defaultValue), opts...)
 }
 
 // NewFloat returns a Float field.
-func NewFloat(name string, defaultValue float64, opts ...float.Option) Field {
-	cfg := float.Configure(opts...)
-	var fieldOpts []Option
-	for locale, val := range cfg.Localization {
-		fieldOpts = append(fieldOpts, Localize(floatToString(val), locale))
-	}
-	return New(name, Float, floatToString(defaultValue), fieldOpts...)
+func NewFloat(name string, defaultValue float64, opts ...Option) Field {
+	return New(name, Float, floatToString(defaultValue), opts...)
 }
 
 func floatToString(v float64) string {
@@ -132,35 +105,15 @@ func floatToString(v float64) string {
 }
 
 // NewMoney returns a Money field.
-func NewMoney(name string, defaultValue currency.Amount, opts ...money.Option) Field {
-	cfg := money.Configure(opts...)
-	var fieldOpts []Option
-	for locale, val := range cfg.Localization {
-		fieldOpts = append(fieldOpts, Localize(moneyToString(val), locale))
-	}
-	return New(name, Money, moneyToString(defaultValue), fieldOpts...)
-}
-
-var defaultMoneyFormatter = currency.NewFormatter(currency.NewLocale("en"))
-
-func moneyToString(m currency.Amount) string {
-	return defaultMoneyFormatter.Format(m)
+func NewMoney(name string, defaultValue currency.Amount, opts ...Option) Field {
+	return New(name, Money, money.Format(defaultValue), opts...)
 }
 
 // NewMeta returns a Meta field.
-func NewMeta(name string, defaultValue meta.Data, opts ...meta.Option) Field {
-	cfg := meta.Configure(opts...)
-	var fieldOpts []Option
-	for locale, val := range cfg.Localization {
-		fieldOpts = append(fieldOpts, Localize(metaToString(val), locale))
-	}
-	return New(name, Meta, metaToString(defaultValue), fieldOpts...)
-}
-
-func metaToString(data meta.Data) string {
-	b, err := json.Marshal(data)
+func NewMeta(name string, defaultValue metadata.Data, opts ...Option) Field {
+	str, err := defaultValue.JSON()
 	if err != nil {
-		panic(fmt.Errorf("marshal metadata: %w", err))
+		panic(err)
 	}
-	return string(b)
+	return New(name, Meta, str, opts...)
 }
