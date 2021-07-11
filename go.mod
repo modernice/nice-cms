@@ -3,6 +3,7 @@ module github.com/modernice/cms
 go 1.16
 
 require (
+	github.com/bojanz/currency v0.0.0-20210528213321-e806b5aaa94a
 	github.com/bounoable/godrive v0.4.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-chi/chi/v5 v5.0.3
