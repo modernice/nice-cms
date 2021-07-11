@@ -14,8 +14,8 @@ import (
 	"github.com/modernice/goes/event"
 )
 
-// TreeAggregate is the name of the Tree aggregate.
-const TreeAggregate = "cms.static.nav.tree"
+// Aggregate is the name of the Nav aggregate.
+const Aggregate = "cms.static.nav"
 
 var (
 	// ErrEmptyName is returned when trying to create a Nav with an empty name.
@@ -66,7 +66,12 @@ func NewTree(items ...Item) *Tree {
 // The provided Items are added as initial items and cannot be removed from the
 // Nav.
 func Create(name string, items ...Item) (*Nav, error) {
-	nav := New(uuid.New())
+	return CreateWithID(uuid.New(), name, items...)
+}
+
+// CreateWithID does the same as Create, but accepts a custom UUID.
+func CreateWithID(id uuid.UUID, name string, items ...Item) (*Nav, error) {
+	nav := New(id)
 
 	if err := nav.Create(name); err != nil {
 		return nav, err
@@ -85,7 +90,7 @@ func Create(name string, items ...Item) (*Nav, error) {
 // create it.
 func New(id uuid.UUID) *Nav {
 	return &Nav{
-		Base: aggregate.New(TreeAggregate, id),
+		Base: aggregate.New(Aggregate, id),
 		Tree: NewTree(),
 	}
 }

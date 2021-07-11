@@ -12,6 +12,8 @@ import (
 )
 
 // Lookup provides UUID lookup for Navs.
+//
+// Use NewLookup to create a Lookup.
 type Lookup struct {
 	nameToIDMux sync.RWMutex
 	nameToID    map[string]uuid.UUID
