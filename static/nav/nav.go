@@ -553,20 +553,20 @@ func GoesRepository(repo aggregate.Repository) Repository {
 	return &goesRepository{repo}
 }
 
-func (r *goesRepository) Save(ctx context.Context, tree *Nav) error {
-	return r.repo.Save(ctx, tree)
+func (r *goesRepository) Save(ctx context.Context, n *Nav) error {
+	return r.repo.Save(ctx, n)
 }
 
 func (r *goesRepository) Fetch(ctx context.Context, id uuid.UUID) (*Nav, error) {
-	tree := New(id)
-	if err := r.repo.Fetch(ctx, tree); err != nil {
-		return tree, fmt.Errorf("goes: %w", err)
+	n := New(id)
+	if err := r.repo.Fetch(ctx, n); err != nil {
+		return n, fmt.Errorf("goes: %w", err)
 	}
-	return tree, nil
+	return n, nil
 }
 
-func (r *goesRepository) Delete(ctx context.Context, tree *Nav) error {
-	return r.repo.Delete(ctx, tree)
+func (r *goesRepository) Delete(ctx context.Context, n *Nav) error {
+	return r.repo.Delete(ctx, n)
 }
 
 type jsonNav struct {
