@@ -3,7 +3,7 @@ package float
 import (
 	"fmt"
 
-	"github.com/modernice/cms/static/page/field"
+	"github.com/modernice/nice-cms/static/page/field"
 )
 
 // Localize returns an Option that localizes a Float field.

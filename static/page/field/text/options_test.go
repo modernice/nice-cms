@@ -3,8 +3,8 @@ package text_test
 import (
 	"testing"
 
-	"github.com/modernice/cms/static/page/field"
-	"github.com/modernice/cms/static/page/field/text"
+	"github.com/modernice/nice-cms/static/page/field"
+	"github.com/modernice/nice-cms/static/page/field/text"
 )
 
 func TestLocalize(t *testing.T) {

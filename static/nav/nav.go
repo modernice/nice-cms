@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/unique"
 	"github.com/modernice/goes/aggregate"
 	"github.com/modernice/goes/event"
+	"github.com/modernice/nice-cms/internal/unique"
 )
 
 // Aggregate is the name of the Nav aggregate.

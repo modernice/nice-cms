@@ -1,8 +1,8 @@
 package meta
 
 import (
-	"github.com/modernice/cms/static/page/field"
-	"github.com/modernice/cms/static/page/metadata"
+	"github.com/modernice/nice-cms/static/page/field"
+	"github.com/modernice/nice-cms/static/page/metadata"
 )
 
 // Localize returns an Option that localizes a Meta field.

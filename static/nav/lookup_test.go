@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/modernice/cms/static/nav"
 	"github.com/modernice/goes/aggregate/repository"
 	"github.com/modernice/goes/event/eventbus/chanbus"
 	"github.com/modernice/goes/event/eventstore"
 	"github.com/modernice/goes/event/eventstore/memstore"
+	"github.com/modernice/nice-cms/static/nav"
 )
 
 func TestLookup(t *testing.T) {

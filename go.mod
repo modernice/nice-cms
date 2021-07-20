@@ -1,4 +1,4 @@
-module github.com/modernice/cms
+module github.com/modernice/nice-cms
 
 go 1.16
 

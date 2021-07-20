@@ -14,19 +14,20 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/imggen"
-	"github.com/modernice/cms/media"
-	"github.com/modernice/cms/media/image/gallery"
-	"github.com/modernice/cms/media/mediaserver"
 	"github.com/modernice/goes/aggregate"
 	"github.com/modernice/goes/aggregate/repository"
 	"github.com/modernice/goes/event"
 	"github.com/modernice/goes/event/eventbus/chanbus"
 	"github.com/modernice/goes/event/eventstore"
 	"github.com/modernice/goes/event/eventstore/memstore"
+	"github.com/modernice/nice-cms/internal/imggen"
+	"github.com/modernice/nice-cms/media"
+	"github.com/modernice/nice-cms/media/image/gallery"
+	"github.com/modernice/nice-cms/media/mediaserver"
 )
 
 func TestMediaServer_lookupGallery(t *testing.T) {
@@ -58,6 +59,8 @@ func TestMediaServer_lookupGallery(t *testing.T) {
 		})
 	}
 
+	<-time.After(50 * time.Millisecond)
+
 	for _, tt := range tests {
 		t.Run(tt.galleryName, func(t *testing.T) {
 			rec := httptest.NewRecorder()
@@ -70,7 +73,8 @@ func TestMediaServer_lookupGallery(t *testing.T) {
 			}
 
 			if rec.Result().StatusCode != http.StatusOK {
-				t.Fatalf("Response should have status code %d; has %d", http.StatusOK, rec.Result().StatusCode)
+				b, _ := io.ReadAll(rec.Result().Body)
+				t.Fatalf("Response should have status code %d; has %d\n\n%s", http.StatusOK, rec.Result().StatusCode, b)
 			}
 
 			if err := json.NewDecoder(rec.Result().Body).Decode(&resp); err != nil {

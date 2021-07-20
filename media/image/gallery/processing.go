@@ -12,10 +12,10 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/concurrent"
-	"github.com/modernice/cms/media"
-	"github.com/modernice/cms/media/image"
 	"github.com/modernice/goes/event"
+	"github.com/modernice/nice-cms/internal/concurrent"
+	"github.com/modernice/nice-cms/media"
+	"github.com/modernice/nice-cms/media/image"
 )
 
 // ProcessorContext is passed to Processors when they process a Stack. The

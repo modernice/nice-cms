@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/modernice/cms/static/nav"
 	"github.com/modernice/goes/test"
+	"github.com/modernice/nice-cms/static/nav"
 )
 
 func TestCreate_emptyName(t *testing.T) {

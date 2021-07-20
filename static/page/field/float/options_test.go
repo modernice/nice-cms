@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/modernice/cms/static/page/field"
-	"github.com/modernice/cms/static/page/field/float"
+	"github.com/modernice/nice-cms/static/page/field"
+	"github.com/modernice/nice-cms/static/page/field/float"
 )
 
 func TestLocalize(t *testing.T) {

@@ -12,14 +12,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/imggen"
-	"github.com/modernice/cms/media"
-	"github.com/modernice/cms/media/image"
-	"github.com/modernice/cms/media/image/gallery"
 	"github.com/modernice/goes/aggregate/repository"
 	"github.com/modernice/goes/event/eventbus/chanbus"
 	"github.com/modernice/goes/event/eventstore"
 	"github.com/modernice/goes/event/eventstore/memstore"
+	"github.com/modernice/nice-cms/internal/imggen"
+	"github.com/modernice/nice-cms/media"
+	"github.com/modernice/nice-cms/media/image"
+	"github.com/modernice/nice-cms/media/image/gallery"
 )
 
 func TestProcessingPipeline_Process(t *testing.T) {

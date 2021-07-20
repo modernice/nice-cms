@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/bojanz/currency"
-	"github.com/modernice/cms/internal/money"
-	"github.com/modernice/cms/static/page/metadata"
+	"github.com/modernice/nice-cms/internal/money"
+	"github.com/modernice/nice-cms/static/page/metadata"
 )
 
 // Built-in field types

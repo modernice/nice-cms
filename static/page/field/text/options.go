@@ -1,6 +1,6 @@
 package text
 
-import "github.com/modernice/cms/static/page/field"
+import "github.com/modernice/nice-cms/static/page/field"
 
 // Localize returns an Option that localizes a Text field.
 func Localize(val string, locales ...string) field.Option {

@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/modernice/cms/media"
-	"github.com/modernice/cms/media/mock_media"
+	"github.com/modernice/nice-cms/media"
+	"github.com/modernice/nice-cms/media/mock_media"
 )
 
 func TestFile_WithTag(t *testing.T) {

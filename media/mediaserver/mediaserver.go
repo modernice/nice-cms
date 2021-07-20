@@ -7,10 +7,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/api"
-	"github.com/modernice/cms/media"
-	"github.com/modernice/cms/media/document"
-	"github.com/modernice/cms/media/image/gallery"
+	"github.com/modernice/nice-cms/internal/api"
+	"github.com/modernice/nice-cms/media"
+	"github.com/modernice/nice-cms/media/document"
+	"github.com/modernice/nice-cms/media/image/gallery"
 )
 
 type server struct {

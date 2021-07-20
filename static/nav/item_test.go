@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/modernice/cms/static/nav"
+	"github.com/modernice/nice-cms/static/nav"
 )
 
 func TestItem_Type(t *testing.T) {

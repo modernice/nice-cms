@@ -10,11 +10,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/imggen"
-	"github.com/modernice/cms/media"
-	"github.com/modernice/cms/media/image/gallery"
-	"github.com/modernice/cms/media/mock_media"
 	"github.com/modernice/goes/test"
+	"github.com/modernice/nice-cms/internal/imggen"
+	"github.com/modernice/nice-cms/media"
+	"github.com/modernice/nice-cms/media/image/gallery"
+	"github.com/modernice/nice-cms/media/mock_media"
 )
 
 var (

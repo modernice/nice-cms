@@ -3,8 +3,8 @@ package integer_test
 import (
 	"testing"
 
-	"github.com/modernice/cms/static/page/field"
-	"github.com/modernice/cms/static/page/field/integer"
+	"github.com/modernice/nice-cms/static/page/field"
+	"github.com/modernice/nice-cms/static/page/field/integer"
 )
 
 func TestLocalize(t *testing.T) {

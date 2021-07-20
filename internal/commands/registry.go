@@ -1,8 +1,8 @@
 package commands
 
 import (
-	"github.com/modernice/cms/static/nav"
 	"github.com/modernice/goes/command"
+	"github.com/modernice/nice-cms/static/nav"
 )
 
 func NewRegistry() command.Registry {

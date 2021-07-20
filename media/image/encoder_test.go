@@ -6,8 +6,8 @@ import (
 	"image/color"
 	"testing"
 
-	"github.com/modernice/cms/internal/imggen"
-	"github.com/modernice/cms/media/image"
+	"github.com/modernice/nice-cms/internal/imggen"
+	"github.com/modernice/nice-cms/media/image"
 )
 
 func TestEncoder_Encode(t *testing.T) {

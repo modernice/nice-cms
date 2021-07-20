@@ -1,8 +1,8 @@
 package page
 
 import (
-	"github.com/modernice/cms/static/page/field"
 	"github.com/modernice/goes/event"
+	"github.com/modernice/nice-cms/static/page/field"
 )
 
 const (

@@ -1,6 +1,6 @@
 package toggle
 
-import "github.com/modernice/cms/static/page/field"
+import "github.com/modernice/nice-cms/static/page/field"
 
 // Localize returns an Option that localizes a Toggle field.
 func Localize(val bool, locales ...string) field.Option {

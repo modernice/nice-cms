@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	media "github.com/modernice/cms/media"
+	media "github.com/modernice/nice-cms/media"
 )
 
 // MockStorage is a mock of Storage interface.

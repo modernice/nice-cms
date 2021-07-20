@@ -3,7 +3,7 @@ package integer
 import (
 	"strconv"
 
-	"github.com/modernice/cms/static/page/field"
+	"github.com/modernice/nice-cms/static/page/field"
 )
 
 // Localize return an Option that localizes an Int field.

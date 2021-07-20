@@ -12,11 +12,11 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/concurrent"
-	"github.com/modernice/cms/internal/unique"
-	"github.com/modernice/cms/media"
 	"github.com/modernice/goes/aggregate"
 	"github.com/modernice/goes/event"
+	"github.com/modernice/nice-cms/internal/concurrent"
+	"github.com/modernice/nice-cms/internal/unique"
+	"github.com/modernice/nice-cms/media"
 )
 
 // Aggregate is the name of the Gallery aggregate.

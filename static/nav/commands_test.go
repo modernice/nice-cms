@@ -7,10 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/commands"
-	"github.com/modernice/cms/internal/discard"
-	"github.com/modernice/cms/internal/events"
-	"github.com/modernice/cms/static/nav"
 	"github.com/modernice/goes/aggregate/repository"
 	"github.com/modernice/goes/command"
 	"github.com/modernice/goes/command/cmdbus"
@@ -19,6 +15,10 @@ import (
 	"github.com/modernice/goes/event/eventbus/chanbus"
 	"github.com/modernice/goes/event/eventstore"
 	"github.com/modernice/goes/event/eventstore/memstore"
+	"github.com/modernice/nice-cms/internal/commands"
+	"github.com/modernice/nice-cms/internal/discard"
+	"github.com/modernice/nice-cms/internal/events"
+	"github.com/modernice/nice-cms/static/nav"
 )
 
 func TestCreateCmd(t *testing.T) {

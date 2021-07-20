@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/modernice/cms/internal/unique"
-	"github.com/modernice/cms/static/page/field"
 	"github.com/modernice/goes/aggregate"
 	"github.com/modernice/goes/event"
+	"github.com/modernice/nice-cms/internal/unique"
+	"github.com/modernice/nice-cms/static/page/field"
 )
 
 // Aggregate is the name of the Page aggregate.

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/bojanz/currency"
-	"github.com/modernice/cms/static/page/field"
-	"github.com/modernice/cms/static/page/field/money"
+	"github.com/modernice/nice-cms/static/page/field"
+	"github.com/modernice/nice-cms/static/page/field/money"
 )
 
 func TestLocalize(t *testing.T) {

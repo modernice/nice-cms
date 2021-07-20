@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
-	"github.com/modernice/cms/static/page"
+	"github.com/modernice/nice-cms/static/page"
 )
 
 func TestPage_MarshalJSON(t *testing.T) {

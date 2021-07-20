@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/modernice/cms/static/page/field"
-	"github.com/modernice/cms/static/page/field/meta"
-	"github.com/modernice/cms/static/page/metadata"
+	"github.com/modernice/nice-cms/static/page/field"
+	"github.com/modernice/nice-cms/static/page/field/meta"
+	"github.com/modernice/nice-cms/static/page/metadata"
 )
 
 func TestLocalize(t *testing.T) {

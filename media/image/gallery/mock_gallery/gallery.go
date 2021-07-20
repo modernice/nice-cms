@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
-	gallery "github.com/modernice/cms/media/image/gallery"
+	gallery "github.com/modernice/nice-cms/media/image/gallery"
 )
 
 // MockRepository is a mock of Repository interface.

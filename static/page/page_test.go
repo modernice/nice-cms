@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
-	"github.com/modernice/cms/static/page"
-	"github.com/modernice/cms/static/page/field"
 	"github.com/modernice/goes/test"
+	"github.com/modernice/nice-cms/static/page"
+	"github.com/modernice/nice-cms/static/page/field"
 )
 
 func TestCreate_emptyName(t *testing.T) {

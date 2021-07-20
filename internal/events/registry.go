@@ -1,8 +1,8 @@
 package events
 
 import (
-	"github.com/modernice/cms/static/nav"
 	"github.com/modernice/goes/event"
+	"github.com/modernice/nice-cms/static/nav"
 )
 
 func NewRegistry() event.Registry {
