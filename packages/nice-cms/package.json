@@ -1,0 +1,16 @@
+{
+	"name": "@modernice/nice-cms",
+	"version": "0.1.0",
+	"private": false,
+	"description": "nice-cms library",
+	"repository": "git@github.com:modernice/nice-cms.git",
+	"license": "MIT",
+	"author": "Saman Hosseini <saman@modernice.ltd>",
+	"main": "dist/index.js",
+	"module": "dist/index.es.js",
+	"browser": "dist/index.umd.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "siroc build"
+	}
+}
