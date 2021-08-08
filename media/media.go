@@ -10,12 +10,6 @@ import (
 	"io"
 )
 
-// // ImageEncoder encodes images, using the appropriate encoder for the specified
-// // image format.
-// type ImageEncoder interface {
-// 	Encode(io.Writer, image.Image, string) error
-// }
-
 // File is a file that is stored in a storage backend.
 type File struct {
 	Name     string   `json:"name"`

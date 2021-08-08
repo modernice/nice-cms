@@ -7,9 +7,13 @@
 		"@babel/core": "^7.15.0",
 		"@babel/preset-env": "^7.15.0",
 		"@babel/preset-typescript": "^7.15.0",
+		"@jest/types": "^27.0.6",
 		"@types/jest": "^26.0.24",
+		"@types/moxios": "^0.4.12",
+		"axios-mock-adapter": "^1.19.0",
 		"babel-jest": "^27.0.6",
 		"jest": "^27.0.6",
+		"moxios": "^0.4.0",
 		"siroc": "^0.14.0",
 		"ts-node": "^10.1.0"
 	},
