@@ -4,6 +4,9 @@
     "module": "esnext",
     "strict": true,     
     "esModuleInterop": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "paths": {
+      "@nice-cms/*": ["./packages/*/src"]
+    }
   }
 }

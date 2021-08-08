@@ -1,3 +1,4 @@
+import { AxiosInstance } from 'axios'
 import { Image } from '../media'
 
 /**
@@ -72,4 +73,12 @@ export function hydrateStackImage(data: any): StackImage {
   return {
     ...data,
   }
+}
+
+/**
+ * Create a new gallery with the given name.
+ */
+export async function createGallery(client: AxiosInstance, name: string) {
+  const { data } = await client.post('/galleries', { name })
+  return hydrateGallery(data)
 }
