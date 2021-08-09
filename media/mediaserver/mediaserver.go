@@ -529,7 +529,7 @@ func (s *galleryServer) tagStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	api.JSON(w, r, http.StatusOK, stack)
+	api.JSON(w, r, http.StatusCreated, stack)
 }
 
 func (s *galleryServer) untagStack(w http.ResponseWriter, r *http.Request) {

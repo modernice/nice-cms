@@ -1,5 +1,15 @@
 import Axios, { AxiosRequestConfig } from 'axios'
 
+export type ApiResponse<T = any> = T extends { [key: string]: any }
+  ? { [K in keyof T]: ApiResponse<T[K]> }
+  : T extends string
+  ? T
+  : T extends number
+  ? T
+  : T extends boolean
+  ? T
+  : any
+
 /**
  * Creates the nice-cms client.
  *

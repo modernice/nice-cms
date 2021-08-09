@@ -1,3 +1,5 @@
+import { ApiResponse } from '@nice-cms/core'
+
 /**
  * A storage file.
  */
@@ -51,14 +53,14 @@ export interface Document extends File {}
 /**
  * Hydrates an API response into a File.
  */
-export function hydrateFile(data: any): File {
+export function hydrateFile(data: ApiResponse<File>): File {
   return { ...data }
 }
 
 /**
  * Hydrates an API response into an Image.
  */
-export function hydrateImage(data: any): Image {
+export function hydrateImage(data: ApiResponse<Image>): Image {
   return {
     ...data,
     ...hydrateFile(data),
@@ -68,7 +70,7 @@ export function hydrateImage(data: any): Image {
 /**
  * Hydrates an API response into a Document.
  */
-export function hydrateDocument(data: any): Document {
+export function hydrateDocument(data: ApiResponse<Document>): Document {
   return {
     ...data,
     ...hydrateFile(data),
