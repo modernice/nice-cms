@@ -215,7 +215,7 @@ func (c *Client) UploadDocument(
 
 	if err := stream.Send(&protomedia.UploadDocumentReq{
 		UploadData: &protomedia.UploadDocumentReq_Metadata{
-			Metadata: &protomedia.UploadDocumentMetadata{
+			Metadata: &protomedia.UploadDocumentReq_UploadDocumentMetadata{
 				ShelfId:    ptypes.UUIDProto(shelfID),
 				UniqueName: uniqueName,
 				Name:       name,
@@ -263,7 +263,7 @@ func (c *Client) ReplaceDocument(ctx context.Context, shelfID, documentID uuid.U
 
 	if err := stream.Send(&protomedia.ReplaceDocumentReq{
 		ReplaceData: &protomedia.ReplaceDocumentReq_Metadata{
-			Metadata: &protomedia.ReplaceDocumentMetadata{
+			Metadata: &protomedia.ReplaceDocumentReq_ReplaceDocumentMetadata{
 				ShelfId:    ptypes.UUIDProto(shelfID),
 				DocumentId: ptypes.UUIDProto(documentID),
 			},

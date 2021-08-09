@@ -21,6 +21,8 @@ type MediaServiceClient interface {
 	LookupShelfByName(ctx context.Context, in *LookupShelfByNameReq, opts ...grpc.CallOption) (*LookupShelfResp, error)
 	UploadDocument(ctx context.Context, opts ...grpc.CallOption) (MediaService_UploadDocumentClient, error)
 	ReplaceDocument(ctx context.Context, opts ...grpc.CallOption) (MediaService_ReplaceDocumentClient, error)
+	UploadImage(ctx context.Context, opts ...grpc.CallOption) (MediaService_UploadImageClient, error)
+	ReplaceImage(ctx context.Context, opts ...grpc.CallOption) (MediaService_ReplaceImageClient, error)
 }
 
 type mediaServiceClient struct {
@@ -108,6 +110,74 @@ func (x *mediaServiceReplaceDocumentClient) CloseAndRecv() (*ShelfDocument, erro
 	return m, nil
 }
 
+func (c *mediaServiceClient) UploadImage(ctx context.Context, opts ...grpc.CallOption) (MediaService_UploadImageClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MediaService_ServiceDesc.Streams[2], "/nicecms.media.v1.MediaService/UploadImage", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &mediaServiceUploadImageClient{stream}
+	return x, nil
+}
+
+type MediaService_UploadImageClient interface {
+	Send(*UploadImageReq) error
+	CloseAndRecv() (*Stack, error)
+	grpc.ClientStream
+}
+
+type mediaServiceUploadImageClient struct {
+	grpc.ClientStream
+}
+
+func (x *mediaServiceUploadImageClient) Send(m *UploadImageReq) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *mediaServiceUploadImageClient) CloseAndRecv() (*Stack, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(Stack)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *mediaServiceClient) ReplaceImage(ctx context.Context, opts ...grpc.CallOption) (MediaService_ReplaceImageClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MediaService_ServiceDesc.Streams[3], "/nicecms.media.v1.MediaService/ReplaceImage", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &mediaServiceReplaceImageClient{stream}
+	return x, nil
+}
+
+type MediaService_ReplaceImageClient interface {
+	Send(*ReplaceImageReq) error
+	CloseAndRecv() (*Stack, error)
+	grpc.ClientStream
+}
+
+type mediaServiceReplaceImageClient struct {
+	grpc.ClientStream
+}
+
+func (x *mediaServiceReplaceImageClient) Send(m *ReplaceImageReq) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *mediaServiceReplaceImageClient) CloseAndRecv() (*Stack, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(Stack)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // MediaServiceServer is the server API for MediaService service.
 // All implementations must embed UnimplementedMediaServiceServer
 // for forward compatibility
@@ -115,6 +185,8 @@ type MediaServiceServer interface {
 	LookupShelfByName(context.Context, *LookupShelfByNameReq) (*LookupShelfResp, error)
 	UploadDocument(MediaService_UploadDocumentServer) error
 	ReplaceDocument(MediaService_ReplaceDocumentServer) error
+	UploadImage(MediaService_UploadImageServer) error
+	ReplaceImage(MediaService_ReplaceImageServer) error
 	mustEmbedUnimplementedMediaServiceServer()
 }
 
@@ -130,6 +202,12 @@ func (UnimplementedMediaServiceServer) UploadDocument(MediaService_UploadDocumen
 }
 func (UnimplementedMediaServiceServer) ReplaceDocument(MediaService_ReplaceDocumentServer) error {
 	return status.Errorf(codes.Unimplemented, "method ReplaceDocument not implemented")
+}
+func (UnimplementedMediaServiceServer) UploadImage(MediaService_UploadImageServer) error {
+	return status.Errorf(codes.Unimplemented, "method UploadImage not implemented")
+}
+func (UnimplementedMediaServiceServer) ReplaceImage(MediaService_ReplaceImageServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReplaceImage not implemented")
 }
 func (UnimplementedMediaServiceServer) mustEmbedUnimplementedMediaServiceServer() {}
 
@@ -214,6 +292,58 @@ func (x *mediaServiceReplaceDocumentServer) Recv() (*ReplaceDocumentReq, error) 
 	return m, nil
 }
 
+func _MediaService_UploadImage_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MediaServiceServer).UploadImage(&mediaServiceUploadImageServer{stream})
+}
+
+type MediaService_UploadImageServer interface {
+	SendAndClose(*Stack) error
+	Recv() (*UploadImageReq, error)
+	grpc.ServerStream
+}
+
+type mediaServiceUploadImageServer struct {
+	grpc.ServerStream
+}
+
+func (x *mediaServiceUploadImageServer) SendAndClose(m *Stack) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *mediaServiceUploadImageServer) Recv() (*UploadImageReq, error) {
+	m := new(UploadImageReq)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _MediaService_ReplaceImage_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MediaServiceServer).ReplaceImage(&mediaServiceReplaceImageServer{stream})
+}
+
+type MediaService_ReplaceImageServer interface {
+	SendAndClose(*Stack) error
+	Recv() (*ReplaceImageReq, error)
+	grpc.ServerStream
+}
+
+type mediaServiceReplaceImageServer struct {
+	grpc.ServerStream
+}
+
+func (x *mediaServiceReplaceImageServer) SendAndClose(m *Stack) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *mediaServiceReplaceImageServer) Recv() (*ReplaceImageReq, error) {
+	m := new(ReplaceImageReq)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // MediaService_ServiceDesc is the grpc.ServiceDesc for MediaService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -235,6 +365,16 @@ var MediaService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ReplaceDocument",
 			Handler:       _MediaService_ReplaceDocument_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "UploadImage",
+			Handler:       _MediaService_UploadImage_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "ReplaceImage",
+			Handler:       _MediaService_ReplaceImage_Handler,
 			ClientStreams: true,
 		},
 	},
