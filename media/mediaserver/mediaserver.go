@@ -13,19 +13,15 @@ import (
 	"github.com/modernice/nice-cms/media/image/gallery"
 )
 
-type server struct {
-	chi.Router
-}
-
-type Option func(*server)
+type Option func(chi.Router)
 
 func WithDocuments(
 	shelfs document.Repository,
 	lookup *document.Lookup,
 	storage media.Storage,
 ) Option {
-	return func(s *server) {
-		s.Mount("/shelfs", newDocumentServer(shelfs, lookup, storage))
+	return func(r chi.Router) {
+		r.Mount("/shelfs", newDocumentServer(shelfs, lookup, storage))
 	}
 }
 
@@ -34,17 +30,17 @@ func WithGalleries(
 	lookup *gallery.Lookup,
 	storage media.Storage,
 ) Option {
-	return func(s *server) {
-		s.Mount("/galleries", newGalleryServer(galleries, lookup, storage))
+	return func(r chi.Router) {
+		r.Mount("/galleries", newGalleryServer(galleries, lookup, storage))
 	}
 }
 
 func New(opts ...Option) http.Handler {
-	srv := server{Router: chi.NewRouter()}
+	r := chi.NewRouter()
 	for _, opt := range opts {
-		opt(&srv)
+		opt(r)
 	}
-	return &srv
+	return r
 }
 
 type documentServer struct {
