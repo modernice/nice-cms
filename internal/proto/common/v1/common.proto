@@ -1,0 +1,7 @@
+syntax = "proto3";
+package nicecms.common.v1;
+option go_package = "github.com/modernice/nice-cms/internal/proto/gen/common/v1;protocommon";
+
+message UUID {
+	bytes bytes = 1;
+}

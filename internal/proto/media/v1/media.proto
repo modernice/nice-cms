@@ -1,0 +1,77 @@
+syntax = "proto3";
+package nicecms.media.v1;
+option go_package = "github.com/modernice/nice-cms/internal/proto/gen/media/v1;protomedia";
+
+import "common/v1/common.proto";
+
+service MediaService {
+	rpc LookupShelfByName(LookupShelfByNameReq) returns (LookupShelfResp);
+	rpc UploadDocument(stream UploadDocumentReq) returns (ShelfDocument);
+	rpc ReplaceDocument(stream ReplaceDocumentReq) returns (ShelfDocument);
+}
+
+message StorageFile {
+	string name = 1;
+	string disk = 2;
+	string path = 3;
+	int64 filesize = 4;
+	repeated string tags = 5;
+}
+
+message StorageImage {
+	StorageFile file = 1;
+	int64 width = 2;
+	int64 height = 3;
+}
+
+message StorageDocument {
+	StorageFile file = 1;
+}
+
+message LookupShelfByNameReq {
+	string name = 1;
+}
+
+message LookupShelfResp {
+	bool found = 1;
+	nicecms.common.v1.UUID documentId = 2;
+}
+
+message UploadDocumentReq {
+	oneof upload_data {
+		UploadDocumentMetadata metadata = 1;
+		bytes chunk = 2;
+	}
+}
+
+message UploadDocumentMetadata {
+	nicecms.common.v1.UUID shelfId = 1;
+	string uniqueName = 2;
+	string name = 3;
+	string disk = 4;
+	string path = 5;
+}
+
+message ReplaceDocumentReq {
+	oneof replace_data {
+		ReplaceDocumentMetadata metadata = 1;
+		bytes chunk = 2;
+	}
+}
+
+message ReplaceDocumentMetadata {
+	nicecms.common.v1.UUID shelfId = 1;
+	nicecms.common.v1.UUID documentId = 2;
+}
+
+message Shelf {
+	nicecms.common.v1.UUID id = 1;
+	string name = 2;
+	repeated ShelfDocument documents = 3;
+}
+
+message ShelfDocument {
+  StorageDocument document = 1;
+	nicecms.common.v1.UUID id = 2;
+	string uniqueName = 3;
+}

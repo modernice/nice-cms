@@ -51,6 +51,11 @@ type Repository interface {
 
 	// Delete deletes the given Shelf from the Repository.
 	Delete(context.Context, *Shelf) error
+
+	// Use fetches the Shelf with the specified UUID, calls the provided
+	// function with that Shelf and then saves the Shelf, but only if the
+	// function returns nil.
+	Use(context.Context, uuid.UUID, func(*Shelf) error) error
 }
 
 // Shelf is a named collection of Documents.
@@ -574,4 +579,18 @@ func (r *goesRepository) Fetch(ctx context.Context, id uuid.UUID) (*Shelf, error
 
 func (r *goesRepository) Delete(ctx context.Context, shelf *Shelf) error {
 	return r.repo.Delete(ctx, shelf)
+}
+
+func (r *goesRepository) Use(ctx context.Context, id uuid.UUID, fn func(*Shelf) error) error {
+	shelf, err := r.Fetch(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := fn(shelf); err != nil {
+		return err
+	}
+	if err := r.Save(ctx, shelf); err != nil {
+		return fmt.Errorf("save shelf: %w", err)
+	}
+	return nil
 }
