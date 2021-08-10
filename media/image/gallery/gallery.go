@@ -52,6 +52,12 @@ type Repository interface {
 
 	// Delete deletes a Gallery.
 	Delete(context.Context, *Gallery) error
+
+	// Use fetches the Gallery with the given UUID, calls the provided function
+	// with that Gallery and saves the Gallery into the repository. If the
+	// function returns a non-nil error, the Gallery is not saved and that error
+	// is returned.
+	Use(context.Context, uuid.UUID, func(*Gallery) error) error
 }
 
 // A Gallery is a collection of image stacks. A Stack may contain multiple
@@ -451,4 +457,18 @@ func (r *goesRepository) Fetch(ctx context.Context, id uuid.UUID) (*Gallery, err
 
 func (r *goesRepository) Delete(ctx context.Context, g *Gallery) error {
 	return r.repo.Delete(ctx, g)
+}
+
+func (r *goesRepository) Use(ctx context.Context, id uuid.UUID, fn func(*Gallery) error) error {
+	g, err := r.Fetch(ctx, id)
+	if err != nil {
+		return fmt.Errorf("fetch gallery: %w", err)
+	}
+	if err := fn(g); err != nil {
+		return err
+	}
+	if err := r.Save(ctx, g); err != nil {
+		return fmt.Errorf("save gallery: %w", err)
+	}
+	return nil
 }
