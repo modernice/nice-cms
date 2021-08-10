@@ -14,6 +14,7 @@ import (
 	"github.com/modernice/nice-cms/internal/testutil"
 	"github.com/modernice/nice-cms/media"
 	"github.com/modernice/nice-cms/media/document"
+	"github.com/modernice/nice-cms/media/image/gallery"
 	"github.com/modernice/nice-cms/media/mediarpc"
 	"google.golang.org/grpc"
 )
@@ -39,7 +40,7 @@ func TestServer_LookupDocumentByName(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
 
 	_, dial := grpctest.NewServer(func(s *grpc.Server) {
-		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, storage))
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, storage))
 	})
 	conn := dial()
 	defer conn.Close()
@@ -81,7 +82,7 @@ func TestServer_UploadDocument(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
 
 	_, dial := grpctest.NewServer(func(s *grpc.Server) {
-		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, storage))
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, storage))
 	})
 	conn := dial()
 	defer conn.Close()
@@ -159,7 +160,7 @@ func TestServer_ReplaceDocument(t *testing.T) {
 	}
 
 	_, dial := grpctest.NewServer(func(s *grpc.Server) {
-		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, storage))
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, storage))
 	})
 	conn := dial()
 	defer conn.Close()
@@ -190,6 +191,48 @@ func TestServer_ReplaceDocument(t *testing.T) {
 
 	if !cmp.Equal(replaced, rdoc) {
 		t.Fatal(cmp.Diff(replaced, rdoc))
+	}
+}
+
+func TestServer_UploadImage(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, _, setupAggregates := testutil.Goes()
+	// ebus, estore, _ := setupEvents()
+	aggregates := setupAggregates()
+
+	galleries := gallery.GoesRepository(aggregates)
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	if err := galleries.Save(ctx, g); err != nil {
+		t.Fatalf("save gallery: %v", err)
+	}
+
+	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
+	_, dial := grpctest.NewServer(func(s *grpc.Server) {
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, storage))
+	})
+	conn := dial()
+	defer conn.Close()
+
+	client := mediarpc.NewClient(conn)
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.Black)
+	filesize := buf.Len()
+
+	name := "foo"
+	disk := "foo-disk"
+	path := "/foo.png"
+	stack, err := client.UploadImage(ctx, g.ID, buf, name, disk, path)
+	if err != nil {
+		t.Fatalf("UploadImage failed with %q", err)
+	}
+
+	if stack.Original().Filesize != filesize {
+		t.Fatalf("Filesize of original image should be %d; is %d", filesize, stack.Original().Filesize)
 	}
 }
 

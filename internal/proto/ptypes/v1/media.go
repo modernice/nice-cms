@@ -2,8 +2,10 @@ package ptypes
 
 import (
 	protomedia "github.com/modernice/nice-cms/internal/proto/gen/media/v1"
+	"github.com/modernice/nice-cms/internal/slice"
 	"github.com/modernice/nice-cms/media"
 	"github.com/modernice/nice-cms/media/document"
+	"github.com/modernice/nice-cms/media/image/gallery"
 )
 
 // StorageFileProto encodes a File.
@@ -75,5 +77,35 @@ func ShelfDocument(doc *protomedia.ShelfDocument) document.Document {
 		Document:   StorageDocument(doc.GetDocument()),
 		ID:         UUID(doc.GetId()),
 		UniqueName: doc.GetUniqueName(),
+	}
+}
+
+func GalleryStackProto(s gallery.Stack) *protomedia.Stack {
+	return &protomedia.Stack{
+		Id:     UUIDProto(s.ID),
+		Images: slice.Map(s.Images, GalleryImageProto).([]*protomedia.StackImage),
+	}
+}
+
+func GalleryStack(s *protomedia.Stack) gallery.Stack {
+	return gallery.Stack{
+		ID:     UUID(s.GetId()),
+		Images: slice.Map(s.GetImages(), GalleryImage).([]gallery.Image),
+	}
+}
+
+func GalleryImageProto(img gallery.Image) *protomedia.StackImage {
+	return &protomedia.StackImage{
+		Image:    StorageImageProto(img.Image),
+		Original: img.Original,
+		Size:     img.Size,
+	}
+}
+
+func GalleryImage(img *protomedia.StackImage) gallery.Image {
+	return gallery.Image{
+		Image:    StorageImage(img.GetImage()),
+		Original: img.GetOriginal(),
+		Size:     img.GetSize(),
 	}
 }
