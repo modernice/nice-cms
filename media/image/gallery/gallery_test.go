@@ -48,7 +48,7 @@ func TestGallery_Create(t *testing.T) {
 		t.Fatalf("Name should be %q; is %q", name, g.Name)
 	}
 
-	test.Change(t, g, gallery.Created, test.WithEventData(gallery.CreatedData{Name: name}))
+	test.Change(t, g, gallery.Created, test.EventData(gallery.CreatedData{Name: name}))
 }
 
 func TestGallery_Create_emptyName(t *testing.T) {
@@ -162,7 +162,7 @@ func TestGallery_Upload(t *testing.T) {
 
 	expectStorageFileContents(t, storage, galleryStack.Images[0].Disk, galleryStack.Images[0].Path, b)
 
-	test.Change(t, g, gallery.ImageUploaded, test.WithEventData(gallery.ImageUploadedData{Stack: stack}))
+	test.Change(t, g, gallery.ImageUploaded, test.EventData(gallery.ImageUploadedData{Stack: stack}))
 }
 
 func TestGallery_Stack(t *testing.T) {
@@ -238,7 +238,7 @@ func TestGallery_Delete(t *testing.T) {
 		expectNoStorageFile(t, storage, img.Disk, img.Path)
 	}
 
-	test.Change(t, g, gallery.StackDeleted, test.WithEventData(gallery.StackDeletedData{Stack: uploaded}))
+	test.Change(t, g, gallery.StackDeleted, test.EventData(gallery.StackDeletedData{Stack: uploaded}))
 }
 
 func TestGallery_Delete_failingStorage(t *testing.T) {
@@ -277,7 +277,7 @@ func TestGallery_Delete_failingStorage(t *testing.T) {
 		t.Fatalf("Get should return %q for a deleted Stack; got %q", gallery.ErrStackNotFound, err)
 	}
 
-	test.Change(t, g, gallery.StackDeleted, test.WithEventData(gallery.StackDeletedData{Stack: uploaded}))
+	test.Change(t, g, gallery.StackDeleted, test.EventData(gallery.StackDeletedData{Stack: uploaded}))
 }
 
 func TestGallery_Tag_Untag_notCreated(t *testing.T) {
@@ -338,7 +338,7 @@ func TestGallery_Replace(t *testing.T) {
 		t.Fatalf("storage file should have been replaced")
 	}
 
-	test.Change(t, g, gallery.ImageReplaced, test.WithEventData(gallery.ImageReplacedData{
+	test.Change(t, g, gallery.ImageReplaced, test.EventData(gallery.ImageReplacedData{
 		Stack: replaced,
 	}))
 }
@@ -393,12 +393,12 @@ func TestGallery_Tag_Untag(t *testing.T) {
 		}
 	}
 
-	test.Change(t, g, gallery.StackTagged, test.WithEventData(gallery.StackTaggedData{
+	test.Change(t, g, gallery.StackTagged, test.EventData(gallery.StackTaggedData{
 		StackID: tagged.ID,
 		Tags:    []string{"foo", "bar", "baz"},
 	}))
 
-	test.Change(t, g, gallery.StackUntagged, test.WithEventData(gallery.StackUntaggedData{
+	test.Change(t, g, gallery.StackUntagged, test.EventData(gallery.StackUntaggedData{
 		StackID: untagged.ID,
 		Tags:    []string{"bar", "foo"},
 	}))
@@ -445,7 +445,7 @@ func TestGallery_RenameStack(t *testing.T) {
 		t.Fatalf("Stack returned wrong Stack. want=%v got=%v", renamed, stack)
 	}
 
-	test.Change(t, g, gallery.StackRenamed, test.WithEventData(gallery.StackRenamedData{
+	test.Change(t, g, gallery.StackRenamed, test.EventData(gallery.StackRenamedData{
 		StackID: renamed.ID,
 		OldName: exampleName,
 		Name:    "New name",
@@ -482,7 +482,7 @@ func TestGallery_Update(t *testing.T) {
 		t.Fatalf("Stack returned wrong Stack. want=%v got=%v", replacement, got)
 	}
 
-	test.Change(t, g, gallery.StackUpdated, test.WithEventData(gallery.StackUpdatedData{Stack: replacement}))
+	test.Change(t, g, gallery.StackUpdated, test.EventData(gallery.StackUpdatedData{Stack: replacement}))
 }
 
 func expectStorageFileContents(t *testing.T, storage media.Storage, diskName, path string, contents []byte) {
