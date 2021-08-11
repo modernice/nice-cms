@@ -3,7 +3,7 @@ import { ApiResponse } from '@nice-cms/core'
 /**
  * A storage file.
  */
-export interface File {
+export interface StorageFile {
   /**
    * Name of the file.
    */
@@ -33,7 +33,7 @@ export interface File {
 /**
  * A storage image.
  */
-export interface Image extends File {
+export interface Image extends StorageFile {
   /**
    * Width in pixels.
    */
@@ -48,31 +48,35 @@ export interface Image extends File {
 /**
  * A storage document.
  */
-export interface Document extends File {}
+export interface StorageDocument extends StorageFile {}
 
 /**
  * Hydrates an API response into a File.
  */
-export function hydrateFile(data: ApiResponse<File>): File {
+export function hydrateStorageFile(
+  data: ApiResponse<StorageFile>
+): StorageFile {
   return { ...data }
 }
 
 /**
  * Hydrates an API response into an Image.
  */
-export function hydrateImage(data: ApiResponse<Image>): Image {
+export function hydrateStorageImage(data: ApiResponse<Image>): Image {
   return {
     ...data,
-    ...hydrateFile(data),
+    ...hydrateStorageFile(data),
   }
 }
 
 /**
  * Hydrates an API response into a Document.
  */
-export function hydrateDocument(data: ApiResponse<Document>): Document {
+export function hydrateStorageDocument(
+  data: ApiResponse<StorageDocument>
+): StorageDocument {
   return {
     ...data,
-    ...hydrateFile(data),
+    ...hydrateStorageFile(data),
   }
 }
