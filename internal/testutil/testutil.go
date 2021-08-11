@@ -7,6 +7,7 @@ import (
 	"github.com/modernice/goes/command/cmdbus"
 	"github.com/modernice/goes/event"
 	"github.com/modernice/goes/event/eventbus/chanbus"
+	"github.com/modernice/goes/event/eventstore"
 	"github.com/modernice/goes/event/eventstore/memstore"
 	"github.com/modernice/nice-cms/internal/events"
 )
@@ -19,7 +20,7 @@ func Goes() (
 ) {
 	ereg := events.NewRegistry()
 	ebus := chanbus.New()
-	estore := memstore.New()
+	estore := eventstore.WithBus(memstore.New(), ebus)
 
 	creg := command.NewRegistry()
 	cbus := cmdbus.New(creg, ereg, ebus)

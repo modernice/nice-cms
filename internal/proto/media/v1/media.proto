@@ -5,12 +5,15 @@ option go_package = "github.com/modernice/nice-cms/internal/proto/gen/media/v1;p
 import "common/v1/common.proto";
 
 service MediaService {
-	rpc LookupShelfByName(LookupShelfByNameReq) returns (LookupShelfResp);
+	rpc LookupShelfByName(nicecms.common.v1.NameLookup) returns (nicecms.common.v1.LookupResp);
 	rpc UploadDocument(stream UploadDocumentReq) returns (ShelfDocument);
 	rpc ReplaceDocument(stream ReplaceDocumentReq) returns (ShelfDocument);
 
+	rpc LookupGalleryByName(nicecms.common.v1.NameLookup) returns (nicecms.common.v1.LookupResp);
+	rpc LookupGalleryStackByName(LookupGalleryStackByNameReq) returns (nicecms.common.v1.LookupResp);
 	rpc UploadImage(stream UploadImageReq) returns (Stack);
 	rpc ReplaceImage(stream ReplaceImageReq) returns (Stack);
+	rpc FetchGallery(FetchGalleryReq) returns (Gallery);
 }
 
 message StorageFile {
@@ -29,15 +32,6 @@ message StorageImage {
 
 message StorageDocument {
 	StorageFile file = 1;
-}
-
-message LookupShelfByNameReq {
-	string name = 1;
-}
-
-message LookupShelfResp {
-	bool found = 1;
-	nicecms.common.v1.UUID documentId = 2;
 }
 
 message UploadDocumentReq {
@@ -67,7 +61,6 @@ message ReplaceDocumentReq {
 	}
 }
 
-
 message Shelf {
 	nicecms.common.v1.UUID id = 1;
 	string name = 2;
@@ -78,6 +71,11 @@ message ShelfDocument {
   StorageDocument document = 1;
 	nicecms.common.v1.UUID id = 2;
 	string uniqueName = 3;
+}
+
+message LookupGalleryStackByNameReq {
+	nicecms.common.v1.UUID galleryId = 1;
+	string name = 2;
 }
 
 message UploadImageReq {
@@ -104,6 +102,16 @@ message ReplaceImageReq {
 		ReplaceImageMetadata metadata = 1;
 		bytes chunk = 2;
 	}
+}
+
+message FetchGalleryReq {
+	nicecms.common.v1.UUID id = 1;
+}
+
+message Gallery {
+	nicecms.common.v1.UUID id = 1;
+	string name = 2;
+	repeated Stack stacks = 3;
 }
 
 message Stack {

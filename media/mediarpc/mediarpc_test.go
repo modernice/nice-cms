@@ -40,7 +40,7 @@ func TestServer_LookupDocumentByName(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
 
 	_, dial := grpctest.NewServer(func(s *grpc.Server) {
-		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, storage))
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, nil, storage))
 	})
 	conn := dial()
 	defer conn.Close()
@@ -82,7 +82,7 @@ func TestServer_UploadDocument(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
 
 	_, dial := grpctest.NewServer(func(s *grpc.Server) {
-		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, storage))
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, nil, storage))
 	})
 	conn := dial()
 	defer conn.Close()
@@ -160,7 +160,7 @@ func TestServer_ReplaceDocument(t *testing.T) {
 	}
 
 	_, dial := grpctest.NewServer(func(s *grpc.Server) {
-		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, storage))
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, nil, storage))
 	})
 	conn := dial()
 	defer conn.Close()
@@ -194,6 +194,97 @@ func TestServer_ReplaceDocument(t *testing.T) {
 	}
 }
 
+func TestServer_LookupGalleryByName(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	setupEvents, _, setupAggregates := testutil.Goes()
+	ebus, estore, _ := setupEvents()
+	aggregates := setupAggregates()
+
+	galleries := gallery.GoesRepository(aggregates)
+	lookup := gallery.NewLookup()
+	go lookup.Project(ctx, ebus, estore)
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	if err := galleries.Save(ctx, g); err != nil {
+		t.Fatalf("save gallery: %v", err)
+	}
+
+	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
+	_, dial := grpctest.NewServer(func(s *grpc.Server) {
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, lookup, storage))
+	})
+	conn := dial()
+	defer conn.Close()
+
+	client := mediarpc.NewClient(conn)
+
+	id, found, err := client.LookupGalleryByName(ctx, "foo")
+	if err != nil {
+		t.Fatalf("LookupGalleryByName failed with %q", err)
+	}
+
+	if !found {
+		t.Fatalf("LookupGalleryByName could not find UUID for %q", "foo")
+	}
+
+	if id != g.ID {
+		t.Fatalf("ID should be %q; is %q", g.ID, id)
+	}
+}
+
+func TestServer_LookupGalleryStackByName(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	setupEvents, _, setupAggregates := testutil.Goes()
+	ebus, estore, _ := setupEvents()
+	aggregates := setupAggregates()
+
+	galleries := gallery.GoesRepository(aggregates)
+	lookup := gallery.NewLookup()
+	lookup.Project(ctx, ebus, estore)
+	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.Black)
+
+	stack, err := g.Upload(ctx, storage, buf, "foo", "foo-disk", "/foo.png")
+	if err != nil {
+		t.Fatalf("upload image: %v", err)
+	}
+
+	if err := galleries.Save(ctx, g); err != nil {
+		t.Fatalf("save gallery: %v", err)
+	}
+
+	_, dial := grpctest.NewServer(func(s *grpc.Server) {
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, lookup, storage))
+	})
+	conn := dial()
+	defer conn.Close()
+
+	client := mediarpc.NewClient(conn)
+
+	id, found, err := client.LookupGalleryStackByName(ctx, g.ID, "foo")
+	if err != nil {
+		t.Fatalf("LookupGalleryStackByName failed with %q", err)
+	}
+
+	if !found {
+		t.Fatalf("LookupGalleryStackByName could not find UUID for %q", "foo")
+	}
+
+	if id != stack.ID {
+		t.Fatalf("ID should be %q; is %q", stack.ID, id)
+	}
+}
+
 func TestServer_UploadImage(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -213,7 +304,7 @@ func TestServer_UploadImage(t *testing.T) {
 
 	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
 	_, dial := grpctest.NewServer(func(s *grpc.Server) {
-		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, storage))
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, nil, storage))
 	})
 	conn := dial()
 	defer conn.Close()
@@ -265,7 +356,7 @@ func TestServer_ReplaceImage(t *testing.T) {
 	}
 
 	_, dial := grpctest.NewServer(func(s *grpc.Server) {
-		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, storage))
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, nil, storage))
 	})
 	conn := dial()
 	defer conn.Close()
@@ -299,6 +390,52 @@ func TestServer_ReplaceImage(t *testing.T) {
 
 	if !cmp.Equal(replaced, gstack) {
 		t.Fatal(cmp.Diff(replaced, gstack))
+	}
+}
+
+func TestServer_FetchGallery(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, _, setupAggregates := testutil.Goes()
+	// ebus, estore, _ := setupEvents()
+	aggregates := setupAggregates()
+
+	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
+	galleries := gallery.GoesRepository(aggregates)
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.Black)
+	name := "foo"
+	disk := "foo-disk"
+	path := "/foo.png"
+
+	if _, err := g.Upload(ctx, storage, buf, name, disk, path); err != nil {
+		t.Fatalf("upload image: %v", err)
+	}
+
+	if err := galleries.Save(ctx, g); err != nil {
+		t.Fatalf("save gallery: %v", err)
+	}
+
+	_, dial := grpctest.NewServer(func(s *grpc.Server) {
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, nil, storage))
+	})
+	conn := dial()
+	defer conn.Close()
+
+	client := mediarpc.NewClient(conn)
+
+	fetched, err := client.FetchGallery(ctx, g.ID)
+	if err != nil {
+		t.Fatalf("FetchGallery failed with %q", err)
+	}
+
+	want := g.JSON()
+	if !cmp.Equal(want, fetched) {
+		t.Fatal(cmp.Diff(want, fetched))
 	}
 }
 

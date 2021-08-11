@@ -80,6 +80,22 @@ func ShelfDocument(doc *protomedia.ShelfDocument) document.Document {
 	}
 }
 
+func GalleryProto(g gallery.JSONGallery) *protomedia.Gallery {
+	return &protomedia.Gallery{
+		Id:     UUIDProto(g.ID),
+		Name:   g.Name,
+		Stacks: slice.Map(g.Stacks, GalleryStackProto).([]*protomedia.Stack),
+	}
+}
+
+func Gallery(g *protomedia.Gallery) gallery.JSONGallery {
+	return gallery.JSONGallery{
+		ID:     UUID(g.GetId()),
+		Name:   g.GetName(),
+		Stacks: slice.Map(g.GetStacks(), GalleryStack).([]gallery.Stack),
+	}
+}
+
 func GalleryStackProto(s gallery.Stack) *protomedia.Stack {
 	return &protomedia.Stack{
 		Id:     UUIDProto(s.ID),

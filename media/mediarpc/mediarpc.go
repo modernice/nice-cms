@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/google/uuid"
+	protocommon "github.com/modernice/nice-cms/internal/proto/gen/common/v1"
 	protomedia "github.com/modernice/nice-cms/internal/proto/gen/media/v1"
 	"github.com/modernice/nice-cms/internal/proto/ptypes/v1"
 	"github.com/modernice/nice-cms/media"
@@ -19,10 +20,11 @@ import (
 type Server struct {
 	protomedia.UnimplementedMediaServiceServer
 
-	shelfs document.Repository
-	lookup *document.Lookup
+	shelfs    document.Repository
+	docLookup *document.Lookup
 
-	galleries gallery.Repository
+	galleries     gallery.Repository
+	galleryLookup *gallery.Lookup
 
 	storage media.Storage
 }
@@ -30,27 +32,29 @@ type Server struct {
 // NewServer returns the media gRPC server.
 func NewServer(
 	shelfs document.Repository,
-	lookup *document.Lookup,
+	docLookup *document.Lookup,
 	galleries gallery.Repository,
+	galleryLookup *gallery.Lookup,
 	storage media.Storage,
 ) *Server {
 	return &Server{
-		shelfs:    shelfs,
-		lookup:    lookup,
-		galleries: galleries,
-		storage:   storage,
+		shelfs:        shelfs,
+		docLookup:     docLookup,
+		galleries:     galleries,
+		galleryLookup: galleryLookup,
+		storage:       storage,
 	}
 }
 
 // LookupShelfByName looks up the UUID of a shelf by its name.
-func (s *Server) LookupShelfByName(ctx context.Context, req *protomedia.LookupShelfByNameReq) (*protomedia.LookupShelfResp, error) {
-	id, ok := s.lookup.ShelfName(req.GetName())
+func (s *Server) LookupShelfByName(ctx context.Context, req *protocommon.NameLookup) (*protocommon.LookupResp, error) {
+	id, ok := s.docLookup.ShelfName(req.GetName())
 	if !ok {
-		return &protomedia.LookupShelfResp{Found: false}, nil
+		return &protocommon.LookupResp{Found: false}, nil
 	}
-	return &protomedia.LookupShelfResp{
-		Found:      true,
-		DocumentId: ptypes.UUIDProto(id),
+	return &protocommon.LookupResp{
+		Found: true,
+		Id:    ptypes.UUIDProto(id),
 	}, nil
 }
 
@@ -194,6 +198,22 @@ func (s *Server) ReplaceDocument(stream protomedia.MediaService_ReplaceDocumentS
 	return stream.SendAndClose(ptypes.ShelfDocumentProto(doc))
 }
 
+func (s *Server) LookupGalleryByName(ctx context.Context, req *protocommon.NameLookup) (*protocommon.LookupResp, error) {
+	id, ok := s.galleryLookup.GalleryName(req.GetName())
+	return &protocommon.LookupResp{
+		Found: ok,
+		Id:    ptypes.UUIDProto(id),
+	}, nil
+}
+
+func (s *Server) LookupGalleryStackByName(ctx context.Context, req *protomedia.LookupGalleryStackByNameReq) (*protocommon.LookupResp, error) {
+	id, ok := s.galleryLookup.StackName(ptypes.UUID(req.GetGalleryId()), req.GetName())
+	return &protocommon.LookupResp{
+		Found: ok,
+		Id:    ptypes.UUIDProto(id),
+	}, nil
+}
+
 func (s *Server) UploadImage(stream protomedia.MediaService_UploadImageServer) error {
 	req, err := stream.Recv()
 	if err != nil {
@@ -332,6 +352,14 @@ func (s *Server) ReplaceImage(stream protomedia.MediaService_ReplaceImageServer)
 	return stream.SendAndClose(ptypes.GalleryStackProto(stack))
 }
 
+func (s *Server) FetchGallery(ctx context.Context, req *protomedia.FetchGalleryReq) (*protomedia.Gallery, error) {
+	g, err := s.galleries.Fetch(ctx, ptypes.UUID(req.GetId()))
+	if err != nil {
+		return nil, err
+	}
+	return ptypes.GalleryProto(g.JSON()), nil
+}
+
 // Client is the media gRPC client.
 type Client struct{ client protomedia.MediaServiceClient }
 
@@ -342,11 +370,11 @@ func NewClient(conn grpc.ClientConnInterface) *Client {
 
 // LookupShelfByName looks up the UUID of a shelf by its name.
 func (c *Client) LookupShelfByName(ctx context.Context, name string) (uuid.UUID, bool, error) {
-	resp, err := c.client.LookupShelfByName(ctx, &protomedia.LookupShelfByNameReq{Name: name})
+	resp, err := c.client.LookupShelfByName(ctx, &protocommon.NameLookup{Name: name})
 	if err != nil {
 		return uuid.Nil, false, err
 	}
-	return ptypes.UUID(resp.GetDocumentId()), resp.GetFound(), nil
+	return ptypes.UUID(resp.GetId()), resp.GetFound(), nil
 }
 
 // UploadDocument uploads a document to a shelf.
@@ -447,6 +475,25 @@ L:
 	return ptypes.ShelfDocument(resp), nil
 }
 
+func (c *Client) LookupGalleryByName(ctx context.Context, name string) (uuid.UUID, bool, error) {
+	resp, err := c.client.LookupGalleryByName(ctx, &protocommon.NameLookup{Name: name})
+	if err != nil {
+		return uuid.Nil, false, err
+	}
+	return ptypes.UUID(resp.GetId()), resp.GetFound(), nil
+}
+
+func (c *Client) LookupGalleryStackByName(ctx context.Context, galleryID uuid.UUID, name string) (uuid.UUID, bool, error) {
+	resp, err := c.client.LookupGalleryStackByName(ctx, &protomedia.LookupGalleryStackByNameReq{
+		GalleryId: ptypes.UUIDProto(galleryID),
+		Name:      name,
+	})
+	if err != nil {
+		return uuid.Nil, false, err
+	}
+	return ptypes.UUID(resp.GetId()), resp.GetFound(), nil
+}
+
 func (c *Client) UploadImage(ctx context.Context, galleryID uuid.UUID, r io.Reader, name, disk, path string) (gallery.Stack, error) {
 	stream, err := c.client.UploadImage(ctx)
 	if err != nil {
@@ -535,4 +582,12 @@ L:
 	}
 
 	return ptypes.GalleryStack(resp), nil
+}
+
+func (c *Client) FetchGallery(ctx context.Context, id uuid.UUID) (gallery.JSONGallery, error) {
+	resp, err := c.client.FetchGallery(ctx, &protomedia.FetchGalleryReq{Id: ptypes.UUIDProto(id)})
+	if err != nil {
+		return gallery.JSONGallery{}, err
+	}
+	return ptypes.Gallery(resp), nil
 }
