@@ -54,6 +54,7 @@ func newDocumentServer(client Client, commands command.Bus) *documentServer {
 
 func (s *documentServer) init() {
 	s.Get("/lookup/name/{Name}", s.lookupName)
+	s.Get("/{ShelfID}", s.showShelf)
 	s.Post("/{ShelfID}/documents", s.uploadDocument)
 	s.Put("/{ShelfID}/documents/{DocumentID}", s.replaceDocument)
 	s.Patch("/{ShelfID}/documents/{DocumentID}", s.updateDocument)
@@ -80,6 +81,22 @@ func (s *documentServer) lookupName(w http.ResponseWriter, r *http.Request) {
 	resp.ShelfID = id
 
 	api.JSON(w, r, http.StatusOK, resp)
+}
+
+func (s *documentServer) showShelf(w http.ResponseWriter, r *http.Request) {
+	id, err := api.ExtractUUID(r, "ShelfID")
+	if err != nil {
+		api.Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	shelf, err := s.client.FetchShelf(r.Context(), id)
+	if err != nil {
+		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Shelf %q not found: %v.", id, err))
+		return
+	}
+
+	api.JSON(w, r, http.StatusOK, shelf)
 }
 
 func (s *documentServer) uploadDocument(w http.ResponseWriter, r *http.Request) {
@@ -313,6 +330,7 @@ func newGalleryServer(client Client, commands command.Bus) *galleryServer {
 
 func (s *galleryServer) init() {
 	s.Get("/lookup/name/{Name}", s.lookupName)
+	s.Get("/{GalleryID}", s.showGallery)
 	s.Post("/{GalleryID}/stacks", s.uploadImage)
 	s.Put("/{GalleryID}/stacks/{StackID}", s.replaceImage)
 	s.Patch("/{GalleryID}/stacks/{StackID}", s.updateStack)
@@ -340,6 +358,21 @@ func (s *galleryServer) lookupName(w http.ResponseWriter, r *http.Request) {
 	resp.GalleryID = id
 
 	api.JSON(w, r, http.StatusOK, resp)
+}
+
+func (s *galleryServer) showGallery(w http.ResponseWriter, r *http.Request) {
+	id, err := api.ExtractUUID(r, "GalleryID")
+	if err != nil {
+		api.Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	g, err := s.client.FetchGallery(r.Context(), id)
+	if err != nil {
+		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Gallery %q not found: %v.", id, err))
+	}
+
+	api.JSON(w, r, http.StatusOK, g)
 }
 
 func (s *galleryServer) uploadImage(w http.ResponseWriter, r *http.Request) {
