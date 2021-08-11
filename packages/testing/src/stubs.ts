@@ -1,3 +1,4 @@
+export const nilUUID = '00000000-0000-0000-0000-000000000000'
 export const exampleUUID = 'b53abd66-e8a5-4962-9a94-586af698d358'
 
 export function randomUUID() {

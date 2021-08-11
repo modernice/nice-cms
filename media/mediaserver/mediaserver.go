@@ -330,6 +330,7 @@ func newGalleryServer(client Client, commands command.Bus) *galleryServer {
 
 func (s *galleryServer) init() {
 	s.Get("/lookup/name/{Name}", s.lookupName)
+	s.Get("/{GalleryID}/lookup/stack-name/{Name}", s.lookupStackName)
 	s.Get("/{GalleryID}", s.showGallery)
 	s.Post("/{GalleryID}/stacks", s.uploadImage)
 	s.Put("/{GalleryID}/stacks/{StackID}", s.replaceImage)
@@ -356,6 +357,32 @@ func (s *galleryServer) lookupName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp.GalleryID = id
+
+	api.JSON(w, r, http.StatusOK, resp)
+}
+
+func (s *galleryServer) lookupStackName(w http.ResponseWriter, r *http.Request) {
+	var resp struct {
+		StackID uuid.UUID `json:"stackId"`
+	}
+
+	galleryID, err := api.ExtractUUID(r, "GalleryID")
+	if err != nil {
+		api.Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	name := chi.URLParam(r, "Name")
+
+	id, ok, err := s.client.LookupGalleryStackByName(r.Context(), galleryID, name)
+	if err != nil {
+		api.Error(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if !ok {
+		api.Error(w, r, http.StatusNotFound, api.Friendly(nil, "Stack %q not found.", name))
+	}
+	resp.StackID = id
 
 	api.JSON(w, r, http.StatusOK, resp)
 }

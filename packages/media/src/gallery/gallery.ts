@@ -84,6 +84,9 @@ export async function createGallery(client: AxiosInstance, name: string) {
   return hydrateGallery(data)
 }
 
+/**
+ * Fetch the gallery with the given UUID.
+ */
 export async function fetchGallery(client: AxiosInstance, id: string) {
   const { data } = await client.get(`/galleries/${id}`)
   return hydrateGallery(data)
@@ -146,6 +149,9 @@ export async function replaceGalleryImage(
   return stack
 }
 
+/**
+ * Updates the stack with the given stackId and returns the updated stack.
+ */
 export async function updateGalleryStack(
   client: AxiosInstance,
   gallery: Gallery,
@@ -171,6 +177,10 @@ export async function updateGalleryStack(
   return stack
 }
 
+/**
+ * Deletes the stack with the given stackId from the gallery and returns the
+ * deleted stack.
+ */
 export async function deleteGalleryStack(
   client: AxiosInstance,
   gallery: Gallery,
@@ -187,6 +197,9 @@ export async function deleteGalleryStack(
   return deleted[0]
 }
 
+/**
+ * Adds tags to the images of a gallery's stack.
+ */
 export async function tagGalleryStack(
   client: AxiosInstance,
   gallery: Gallery,
@@ -200,6 +213,9 @@ export async function tagGalleryStack(
   return hydrateStack(data)
 }
 
+/**
+ * Removes tags from the images of a gallery's stack.
+ */
 export async function untagGalleryStack(
   client: AxiosInstance,
   gallery: Gallery,
@@ -218,6 +234,9 @@ export async function untagGalleryStack(
   return stack
 }
 
+/**
+ * Returns the stack with the given stackId from the stacks of the gallery.
+ */
 export function findGalleryStack(gallery: Gallery, stackId: string) {
   return gallery.stacks.find((stack) => stack.id === stackId)
 }
