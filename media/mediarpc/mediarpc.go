@@ -29,6 +29,11 @@ type Server struct {
 	storage media.Storage
 }
 
+// Register registers the server into a ServiceRegistrar.
+func (s *Server) Register(reg grpc.ServiceRegistrar) {
+	protomedia.RegisterMediaServiceServer(reg, s)
+}
+
 // NewServer returns the media gRPC server.
 func NewServer(
 	shelfs document.Repository,
