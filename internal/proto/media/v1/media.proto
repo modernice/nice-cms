@@ -97,6 +97,7 @@ message UploadImageReq {
 message ReplaceImageReq {
 	message ReplaceImageMetadata {
 		nicecms.common.v1.UUID galleryId = 1;
+		nicecms.common.v1.UUID stackId = 2;
 	}
 
 	oneof replace_data {

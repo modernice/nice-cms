@@ -78,3 +78,17 @@ func (mr *MockRepositoryMockRecorder) Save(arg0, arg1 interface{}) *gomock.Call 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), arg0, arg1)
 }
+
+// Use mocks base method.
+func (m *MockRepository) Use(arg0 context.Context, arg1 uuid.UUID, arg2 func(*gallery.Gallery) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Use", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Use indicates an expected call of Use.
+func (mr *MockRepositoryMockRecorder) Use(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Use", reflect.TypeOf((*MockRepository)(nil).Use), arg0, arg1, arg2)
+}

@@ -236,6 +236,72 @@ func TestServer_UploadImage(t *testing.T) {
 	}
 }
 
+func TestServer_ReplaceImage(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, _, setupAggregates := testutil.Goes()
+	// ebus, estore, _ := setupEvents()
+	aggregates := setupAggregates()
+
+	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
+	galleries := gallery.GoesRepository(aggregates)
+
+	g := gallery.New(uuid.New())
+	g.Create("foo")
+
+	_, buf := imggen.ColoredRectangle(800, 600, color.Black)
+	name := "foo"
+	disk := "foo-disk"
+	path := "/foo.png"
+
+	stack, err := g.Upload(ctx, storage, buf, name, disk, path)
+	if err != nil {
+		t.Fatalf("upload image: %v", err)
+	}
+
+	if err := galleries.Save(ctx, g); err != nil {
+		t.Fatalf("save gallery: %v", err)
+	}
+
+	_, dial := grpctest.NewServer(func(s *grpc.Server) {
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(nil, nil, galleries, storage))
+	})
+	conn := dial()
+	defer conn.Close()
+
+	client := mediarpc.NewClient(conn)
+
+	_, buf = imggen.ColoredRectangle(1200, 1000, color.White)
+
+	replaced, err := client.ReplaceImage(ctx, g.ID, stack.ID, buf)
+	if err != nil {
+		t.Fatalf("ReplacImage failed with %q", err)
+	}
+
+	if replaced.Original().Width != 1200 || replaced.Original().Height != 1000 {
+		t.Fatalf(
+			"replaced image should have Width=%d Height=%d; got Width=%d Height=%d",
+			1200, 1000,
+			replaced.Original().Width, replaced.Original().Height,
+		)
+	}
+
+	g, err = galleries.Fetch(ctx, g.ID)
+	if err != nil {
+		t.Fatalf("fetch gallery: %v", err)
+	}
+
+	gstack, err := g.Stack(stack.ID)
+	if err != nil {
+		t.Fatalf("get stack: %v", err)
+	}
+
+	if !cmp.Equal(replaced, gstack) {
+		t.Fatal(cmp.Diff(replaced, gstack))
+	}
+}
+
 func newDocumentLookup(ctx context.Context, bus event.Bus, store event.Store) *document.Lookup {
 	l := document.NewLookup()
 	go l.Project(ctx, bus, store)

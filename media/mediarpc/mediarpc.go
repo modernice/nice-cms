@@ -263,6 +263,75 @@ func (s *Server) UploadImage(stream protomedia.MediaService_UploadImageServer) e
 	return stream.SendAndClose(ptypes.GalleryStackProto(stack))
 }
 
+func (s *Server) ReplaceImage(stream protomedia.MediaService_ReplaceImageServer) error {
+	req, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+
+	meta := req.GetMetadata()
+	if meta == nil {
+		return errors.New("missing metadata")
+	}
+
+	receiveError := make(chan error)
+	failReceive := func(err error) {
+		select {
+		case <-stream.Context().Done():
+		case receiveError <- err:
+		}
+	}
+
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		for {
+			req, err := stream.Recv()
+			if err == io.EOF {
+				return
+			}
+			if err != nil {
+				failReceive(err)
+				return
+			}
+
+			chunk := req.GetChunk()
+			if chunk == nil {
+				failReceive(errors.New("missing chunk"))
+				return
+			}
+
+			if _, err := pw.Write(chunk); err != nil {
+				failReceive(err)
+				return
+			}
+		}
+	}()
+
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+
+	go func() {
+		select {
+		case <-ctx.Done():
+		case err := <-receiveError:
+			if err != nil {
+				cancel()
+			}
+		}
+	}()
+
+	var stack gallery.Stack
+	if err := s.galleries.Use(ctx, ptypes.UUID(meta.GetGalleryId()), func(g *gallery.Gallery) error {
+		stack, err = g.Replace(ctx, s.storage, pr, ptypes.UUID(meta.GetStackId()))
+		return err
+	}); err != nil {
+		return err
+	}
+
+	return stream.SendAndClose(ptypes.GalleryStackProto(stack))
+}
+
 // Client is the media gRPC client.
 type Client struct{ client protomedia.MediaServiceClient }
 
@@ -410,6 +479,51 @@ L:
 
 		if err := stream.Send(&protomedia.UploadImageReq{
 			UploadData: &protomedia.UploadImageReq_Chunk{Chunk: buf[:n]},
+		}); err != nil {
+			return gallery.Stack{}, fmt.Errorf("send chunk: %w", err)
+		}
+	}
+
+	resp, err := stream.CloseAndRecv()
+	if err != nil {
+		return gallery.Stack{}, err
+	}
+
+	return ptypes.GalleryStack(resp), nil
+}
+
+func (c *Client) ReplaceImage(ctx context.Context, galleryID, stackID uuid.UUID, r io.Reader) (gallery.Stack, error) {
+	stream, err := c.client.ReplaceImage(ctx)
+	if err != nil {
+		return gallery.Stack{}, err
+	}
+
+	if err := stream.Send(&protomedia.ReplaceImageReq{
+		ReplaceData: &protomedia.ReplaceImageReq_Metadata{
+			Metadata: &protomedia.ReplaceImageReq_ReplaceImageMetadata{
+				GalleryId: ptypes.UUIDProto(galleryID),
+				StackId:   ptypes.UUIDProto(stackID),
+			},
+		},
+	}); err != nil {
+		return gallery.Stack{}, fmt.Errorf("send metadata: %w", err)
+	}
+
+	buf := make([]byte, 512)
+L:
+	for {
+		n, err := r.Read(buf)
+		if err == io.EOF {
+			break L
+		}
+		if err != nil {
+			return gallery.Stack{}, err
+		}
+
+		if err := stream.Send(&protomedia.ReplaceImageReq{
+			ReplaceData: &protomedia.ReplaceImageReq_Chunk{
+				Chunk: buf[:n],
+			},
 		}); err != nil {
 			return gallery.Stack{}, fmt.Errorf("send chunk: %w", err)
 		}
