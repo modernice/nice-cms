@@ -15,6 +15,9 @@ import (
 	"github.com/modernice/nice-cms/media/image/gallery"
 )
 
+// Client is the media client.
+//
+// Use github.com/modernice/nice-cms/media/mediarpc.NewClient to get a grpc Client.
 type Client interface {
 	LookupShelfByName(context.Context, string) (uuid.UUID, bool, error)
 	UploadDocument(_ context.Context, shelfID uuid.UUID, _ io.Reader, uniqueName, name, disk, path string) (document.Document, error)
@@ -28,10 +31,40 @@ type Client interface {
 	FetchGallery(context.Context, uuid.UUID) (gallery.JSONGallery, error)
 }
 
-func New(client Client, commands command.Bus) http.Handler {
+type Option func(*config)
+
+type config struct {
+	withoutDocuments bool
+	withoutGalleries bool
+}
+
+func WithoutDocuments() Option {
+	return func(cfg *config) {
+		cfg.withoutDocuments = true
+	}
+}
+
+func WithoutGalleries() Option {
+	return func(cfg *config) {
+		cfg.withoutGalleries = true
+	}
+}
+
+// New returns the mediaserver as an http.Handler.
+func New(client Client, commands command.Bus, opts ...Option) http.Handler {
+	var cfg config
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	r := chi.NewRouter()
-	r.Mount("/documents", newDocumentServer(client, commands))
-	r.Mount("/galleries", newGalleryServer(client, commands))
+	if !cfg.withoutDocuments {
+		r.Mount("/documents", newDocumentServer(client, commands))
+	}
+	if !cfg.withoutGalleries {
+		r.Mount("/galleries", newGalleryServer(client, commands))
+	}
+
 	return r
 }
 
