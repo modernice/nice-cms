@@ -198,6 +198,14 @@ func (s *Server) ReplaceDocument(stream protomedia.MediaService_ReplaceDocumentS
 	return stream.SendAndClose(ptypes.ShelfDocumentProto(doc))
 }
 
+func (s *Server) FetchShelf(ctx context.Context, id *protocommon.UUID) (*protomedia.Shelf, error) {
+	shelf, err := s.shelfs.Fetch(ctx, ptypes.UUID(id))
+	if err != nil {
+		return nil, err
+	}
+	return ptypes.ShelfProto(shelf.JSON()), nil
+}
+
 func (s *Server) LookupGalleryByName(ctx context.Context, req *protocommon.NameLookup) (*protocommon.LookupResp, error) {
 	id, ok := s.galleryLookup.GalleryName(req.GetName())
 	return &protocommon.LookupResp{
@@ -352,8 +360,8 @@ func (s *Server) ReplaceImage(stream protomedia.MediaService_ReplaceImageServer)
 	return stream.SendAndClose(ptypes.GalleryStackProto(stack))
 }
 
-func (s *Server) FetchGallery(ctx context.Context, req *protomedia.FetchGalleryReq) (*protomedia.Gallery, error) {
-	g, err := s.galleries.Fetch(ctx, ptypes.UUID(req.GetId()))
+func (s *Server) FetchGallery(ctx context.Context, id *protocommon.UUID) (*protomedia.Gallery, error) {
+	g, err := s.galleries.Fetch(ctx, ptypes.UUID(id))
 	if err != nil {
 		return nil, err
 	}
@@ -475,6 +483,14 @@ L:
 	return ptypes.ShelfDocument(resp), nil
 }
 
+func (c *Client) FetchShelf(ctx context.Context, id uuid.UUID) (document.JSONShelf, error) {
+	resp, err := c.client.FetchShelf(ctx, ptypes.UUIDProto(id))
+	if err != nil {
+		return document.JSONShelf{}, err
+	}
+	return ptypes.Shelf(resp), nil
+}
+
 func (c *Client) LookupGalleryByName(ctx context.Context, name string) (uuid.UUID, bool, error) {
 	resp, err := c.client.LookupGalleryByName(ctx, &protocommon.NameLookup{Name: name})
 	if err != nil {
@@ -585,7 +601,7 @@ L:
 }
 
 func (c *Client) FetchGallery(ctx context.Context, id uuid.UUID) (gallery.JSONGallery, error) {
-	resp, err := c.client.FetchGallery(ctx, &protomedia.FetchGalleryReq{Id: ptypes.UUIDProto(id)})
+	resp, err := c.client.FetchGallery(ctx, ptypes.UUIDProto(id))
 	if err != nil {
 		return gallery.JSONGallery{}, err
 	}

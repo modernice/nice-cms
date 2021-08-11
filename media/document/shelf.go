@@ -4,6 +4,7 @@ package document
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -449,6 +450,28 @@ func (s *Shelf) untag(evt event.Event) {
 	}
 	doc.Document = doc.WithoutTag(data.Tags...)
 	s.replace(doc.ID, doc)
+}
+
+type snapshot struct {
+	Documents []Document `json:"documents"`
+}
+
+// MarshalSnapshot implements snapshot.Marshaler.
+func (s *Shelf) MarshalSnapshot() ([]byte, error) {
+	return json.Marshal(snapshot{Documents: s.Documents})
+}
+
+// UnmarshalSnapshot implements snapshot.Unmarshaler.
+func (s *Shelf) UnmarshalSnapshot(b []byte) error {
+	var snap snapshot
+	if err := json.Unmarshal(b, &snap); err != nil {
+		return err
+	}
+	s.Documents = snap.Documents
+	if s.Documents == nil {
+		s.Documents = make([]Document, 0)
+	}
+	return nil
 }
 
 // A SearchOption is used to filter Documents in a search.

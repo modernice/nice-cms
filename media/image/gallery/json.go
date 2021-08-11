@@ -17,3 +17,13 @@ func (g *Gallery) JSON() JSONGallery {
 		Stacks: g.Stacks,
 	}
 }
+
+// Stack returns the Stack with the given UUID or ErrStackNotFound.
+func (g JSONGallery) Stack(id uuid.UUID) (Stack, error) {
+	for _, stack := range g.Stacks {
+		if stack.ID == id {
+			return stack.copy(), nil
+		}
+	}
+	return Stack{}, ErrStackNotFound
+}

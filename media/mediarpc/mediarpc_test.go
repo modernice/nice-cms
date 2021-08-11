@@ -194,6 +194,50 @@ func TestServer_ReplaceDocument(t *testing.T) {
 	}
 }
 
+func TestServer_FetchShelf(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	setupEvents, _, setupAggregates := testutil.Goes()
+	ebus, estore, _ := setupEvents()
+	aggregates := setupAggregates()
+
+	lookup := newDocumentLookup(ctx, ebus, estore)
+	storage := media.NewStorage(media.ConfigureDisk("foo-disk", media.MemoryDisk()))
+
+	shelfs := document.GoesRepository(aggregates)
+
+	shelf := document.NewShelf(uuid.New())
+	shelf.Create("foo")
+
+	_, buf := imggen.ColoredRectangle(600, 400, color.Black)
+
+	if _, err := shelf.Add(ctx, storage, buf, "unique-foo", "foo", "foo-disk", "/foo.png"); err != nil {
+		t.Fatalf("add document: %v", err)
+	}
+
+	if err := shelfs.Save(ctx, shelf); err != nil {
+		t.Fatalf("save shelf: %v", err)
+	}
+
+	_, dial := grpctest.NewServer(func(s *grpc.Server) {
+		protomedia.RegisterMediaServiceServer(s, mediarpc.NewServer(shelfs, lookup, nil, nil, storage))
+	})
+	conn := dial()
+	defer conn.Close()
+
+	client := mediarpc.NewClient(conn)
+
+	fetched, err := client.FetchShelf(ctx, shelf.ID)
+	if err != nil {
+		t.Fatalf("FetchShelf failed with %q", err)
+	}
+
+	if !cmp.Equal(shelf.JSON(), fetched) {
+		t.Fatal(cmp.Diff(shelf.JSON(), fetched))
+	}
+}
+
 func TestServer_LookupGalleryByName(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

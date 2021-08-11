@@ -62,6 +62,22 @@ func StorageDocument(doc *protomedia.StorageDocument) media.Document {
 	)
 }
 
+func ShelfProto(s document.JSONShelf) *protomedia.Shelf {
+	return &protomedia.Shelf{
+		Id:        UUIDProto(s.ID),
+		Name:      s.Name,
+		Documents: slice.Map(s.Documents, ShelfDocumentProto).([]*protomedia.ShelfDocument),
+	}
+}
+
+func Shelf(s *protomedia.Shelf) document.JSONShelf {
+	return document.JSONShelf{
+		ID:        UUID(s.GetId()),
+		Name:      s.GetName(),
+		Documents: slice.Map(s.GetDocuments(), ShelfDocument).([]document.Document),
+	}
+}
+
 // ShelfDocumentProto encodes a Document.
 func ShelfDocumentProto(doc document.Document) *protomedia.ShelfDocument {
 	return &protomedia.ShelfDocument{

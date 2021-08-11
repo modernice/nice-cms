@@ -22,11 +22,12 @@ type MediaServiceClient interface {
 	LookupShelfByName(ctx context.Context, in *v1.NameLookup, opts ...grpc.CallOption) (*v1.LookupResp, error)
 	UploadDocument(ctx context.Context, opts ...grpc.CallOption) (MediaService_UploadDocumentClient, error)
 	ReplaceDocument(ctx context.Context, opts ...grpc.CallOption) (MediaService_ReplaceDocumentClient, error)
+	FetchShelf(ctx context.Context, in *v1.UUID, opts ...grpc.CallOption) (*Shelf, error)
 	LookupGalleryByName(ctx context.Context, in *v1.NameLookup, opts ...grpc.CallOption) (*v1.LookupResp, error)
 	LookupGalleryStackByName(ctx context.Context, in *LookupGalleryStackByNameReq, opts ...grpc.CallOption) (*v1.LookupResp, error)
 	UploadImage(ctx context.Context, opts ...grpc.CallOption) (MediaService_UploadImageClient, error)
 	ReplaceImage(ctx context.Context, opts ...grpc.CallOption) (MediaService_ReplaceImageClient, error)
-	FetchGallery(ctx context.Context, in *FetchGalleryReq, opts ...grpc.CallOption) (*Gallery, error)
+	FetchGallery(ctx context.Context, in *v1.UUID, opts ...grpc.CallOption) (*Gallery, error)
 }
 
 type mediaServiceClient struct {
@@ -112,6 +113,15 @@ func (x *mediaServiceReplaceDocumentClient) CloseAndRecv() (*ShelfDocument, erro
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *mediaServiceClient) FetchShelf(ctx context.Context, in *v1.UUID, opts ...grpc.CallOption) (*Shelf, error) {
+	out := new(Shelf)
+	err := c.cc.Invoke(ctx, "/nicecms.media.v1.MediaService/FetchShelf", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *mediaServiceClient) LookupGalleryByName(ctx context.Context, in *v1.NameLookup, opts ...grpc.CallOption) (*v1.LookupResp, error) {
@@ -200,7 +210,7 @@ func (x *mediaServiceReplaceImageClient) CloseAndRecv() (*Stack, error) {
 	return m, nil
 }
 
-func (c *mediaServiceClient) FetchGallery(ctx context.Context, in *FetchGalleryReq, opts ...grpc.CallOption) (*Gallery, error) {
+func (c *mediaServiceClient) FetchGallery(ctx context.Context, in *v1.UUID, opts ...grpc.CallOption) (*Gallery, error) {
 	out := new(Gallery)
 	err := c.cc.Invoke(ctx, "/nicecms.media.v1.MediaService/FetchGallery", in, out, opts...)
 	if err != nil {
@@ -216,11 +226,12 @@ type MediaServiceServer interface {
 	LookupShelfByName(context.Context, *v1.NameLookup) (*v1.LookupResp, error)
 	UploadDocument(MediaService_UploadDocumentServer) error
 	ReplaceDocument(MediaService_ReplaceDocumentServer) error
+	FetchShelf(context.Context, *v1.UUID) (*Shelf, error)
 	LookupGalleryByName(context.Context, *v1.NameLookup) (*v1.LookupResp, error)
 	LookupGalleryStackByName(context.Context, *LookupGalleryStackByNameReq) (*v1.LookupResp, error)
 	UploadImage(MediaService_UploadImageServer) error
 	ReplaceImage(MediaService_ReplaceImageServer) error
-	FetchGallery(context.Context, *FetchGalleryReq) (*Gallery, error)
+	FetchGallery(context.Context, *v1.UUID) (*Gallery, error)
 	mustEmbedUnimplementedMediaServiceServer()
 }
 
@@ -237,6 +248,9 @@ func (UnimplementedMediaServiceServer) UploadDocument(MediaService_UploadDocumen
 func (UnimplementedMediaServiceServer) ReplaceDocument(MediaService_ReplaceDocumentServer) error {
 	return status.Errorf(codes.Unimplemented, "method ReplaceDocument not implemented")
 }
+func (UnimplementedMediaServiceServer) FetchShelf(context.Context, *v1.UUID) (*Shelf, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchShelf not implemented")
+}
 func (UnimplementedMediaServiceServer) LookupGalleryByName(context.Context, *v1.NameLookup) (*v1.LookupResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LookupGalleryByName not implemented")
 }
@@ -249,7 +263,7 @@ func (UnimplementedMediaServiceServer) UploadImage(MediaService_UploadImageServe
 func (UnimplementedMediaServiceServer) ReplaceImage(MediaService_ReplaceImageServer) error {
 	return status.Errorf(codes.Unimplemented, "method ReplaceImage not implemented")
 }
-func (UnimplementedMediaServiceServer) FetchGallery(context.Context, *FetchGalleryReq) (*Gallery, error) {
+func (UnimplementedMediaServiceServer) FetchGallery(context.Context, *v1.UUID) (*Gallery, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchGallery not implemented")
 }
 func (UnimplementedMediaServiceServer) mustEmbedUnimplementedMediaServiceServer() {}
@@ -333,6 +347,24 @@ func (x *mediaServiceReplaceDocumentServer) Recv() (*ReplaceDocumentReq, error) 
 		return nil, err
 	}
 	return m, nil
+}
+
+func _MediaService_FetchShelf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(v1.UUID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MediaServiceServer).FetchShelf(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/nicecms.media.v1.MediaService/FetchShelf",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MediaServiceServer).FetchShelf(ctx, req.(*v1.UUID))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _MediaService_LookupGalleryByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -424,7 +456,7 @@ func (x *mediaServiceReplaceImageServer) Recv() (*ReplaceImageReq, error) {
 }
 
 func _MediaService_FetchGallery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FetchGalleryReq)
+	in := new(v1.UUID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -436,7 +468,7 @@ func _MediaService_FetchGallery_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: "/nicecms.media.v1.MediaService/FetchGallery",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MediaServiceServer).FetchGallery(ctx, req.(*FetchGalleryReq))
+		return srv.(MediaServiceServer).FetchGallery(ctx, req.(*v1.UUID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -451,6 +483,10 @@ var MediaService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LookupShelfByName",
 			Handler:    _MediaService_LookupShelfByName_Handler,
+		},
+		{
+			MethodName: "FetchShelf",
+			Handler:    _MediaService_FetchShelf_Handler,
 		},
 		{
 			MethodName: "LookupGalleryByName",

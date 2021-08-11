@@ -8,12 +8,13 @@ service MediaService {
 	rpc LookupShelfByName(nicecms.common.v1.NameLookup) returns (nicecms.common.v1.LookupResp);
 	rpc UploadDocument(stream UploadDocumentReq) returns (ShelfDocument);
 	rpc ReplaceDocument(stream ReplaceDocumentReq) returns (ShelfDocument);
+	rpc FetchShelf(nicecms.common.v1.UUID) returns (Shelf);
 
 	rpc LookupGalleryByName(nicecms.common.v1.NameLookup) returns (nicecms.common.v1.LookupResp);
 	rpc LookupGalleryStackByName(LookupGalleryStackByNameReq) returns (nicecms.common.v1.LookupResp);
 	rpc UploadImage(stream UploadImageReq) returns (Stack);
 	rpc ReplaceImage(stream ReplaceImageReq) returns (Stack);
-	rpc FetchGallery(FetchGalleryReq) returns (Gallery);
+	rpc FetchGallery(nicecms.common.v1.UUID) returns (Gallery);
 }
 
 message StorageFile {
@@ -102,10 +103,6 @@ message ReplaceImageReq {
 		ReplaceImageMetadata metadata = 1;
 		bytes chunk = 2;
 	}
-}
-
-message FetchGalleryReq {
-	nicecms.common.v1.UUID id = 1;
 }
 
 message Gallery {

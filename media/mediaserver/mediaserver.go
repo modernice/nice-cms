@@ -2,68 +2,54 @@ package mediaserver
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/modernice/goes/command"
+	"github.com/modernice/goes/command/cmdbus/dispatch"
 	"github.com/modernice/nice-cms/internal/api"
-	"github.com/modernice/nice-cms/media"
 	"github.com/modernice/nice-cms/media/document"
 	"github.com/modernice/nice-cms/media/image/gallery"
 )
 
-type Option func(chi.Router)
+type Client interface {
+	LookupShelfByName(context.Context, string) (uuid.UUID, bool, error)
+	UploadDocument(_ context.Context, shelfID uuid.UUID, _ io.Reader, uniqueName, name, disk, path string) (document.Document, error)
+	ReplaceDocument(_ context.Context, shelfID, documentID uuid.UUID, _ io.Reader) (document.Document, error)
+	FetchShelf(context.Context, uuid.UUID) (document.JSONShelf, error)
 
-func WithDocuments(
-	shelfs document.Repository,
-	lookup *document.Lookup,
-	storage media.Storage,
-) Option {
-	return func(r chi.Router) {
-		r.Mount("/shelfs", newDocumentServer(shelfs, lookup, storage))
-	}
+	LookupGalleryByName(context.Context, string) (uuid.UUID, bool, error)
+	LookupGalleryStackByName(_ context.Context, galleryID uuid.UUID, name string) (uuid.UUID, bool, error)
+	UploadImage(_ context.Context, galleryID uuid.UUID, _ io.Reader, name, disk, path string) (gallery.Stack, error)
+	ReplaceImage(_ context.Context, galleryID, stackID uuid.UUID, _ io.Reader) (gallery.Stack, error)
+	FetchGallery(context.Context, uuid.UUID) (gallery.JSONGallery, error)
 }
 
-func WithGalleries(
-	galleries gallery.Repository,
-	lookup *gallery.Lookup,
-	storage media.Storage,
-) Option {
-	return func(r chi.Router) {
-		r.Mount("/galleries", newGalleryServer(galleries, lookup, storage))
-	}
-}
-
-func New(opts ...Option) http.Handler {
+func New(client Client, commands command.Bus) http.Handler {
 	r := chi.NewRouter()
-	for _, opt := range opts {
-		opt(r)
-	}
+	r.Mount("/documents", newDocumentServer(client, commands))
+	r.Mount("/galleries", newGalleryServer(client, commands))
 	return r
 }
 
 type documentServer struct {
 	chi.Router
 
-	shelfs  document.Repository
-	lookup  *document.Lookup
-	storage media.Storage
+	client   Client
+	commands command.Bus
 }
 
-func newDocumentServer(
-	shelfs document.Repository,
-	lookup *document.Lookup,
-	storage media.Storage,
-) *documentServer {
-	srv := documentServer{
-		Router:  chi.NewRouter(),
-		shelfs:  shelfs,
-		lookup:  lookup,
-		storage: storage,
+func newDocumentServer(client Client, commands command.Bus) *documentServer {
+	s := documentServer{
+		Router:   chi.NewRouter(),
+		client:   client,
+		commands: commands,
 	}
-	srv.init()
-	return &srv
+	s.init()
+	return &s
 }
 
 func (s *documentServer) init() {
@@ -82,10 +68,14 @@ func (s *documentServer) lookupName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := chi.URLParam(r, "Name")
-	id, ok := s.lookup.ShelfName(name)
-	if !ok {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(nil, "Could not find Shelf named %q", name))
+
+	id, ok, err := s.client.LookupShelfByName(r.Context(), name)
+	if err != nil {
+		api.Error(w, r, http.StatusInternalServerError, err)
 		return
+	}
+	if !ok {
+		api.Error(w, r, http.StatusNotFound, api.Friendly(nil, "No shelf named %q found.", name))
 	}
 	resp.ShelfID = id
 
@@ -110,20 +100,9 @@ func (s *documentServer) uploadDocument(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	shelf, err := s.fetchShelf(r.Context(), shelfID)
+	doc, err := s.client.UploadDocument(r.Context(), shelfID, file, uniqueName, name, disk, path)
 	if err != nil {
-		api.Error(w, r, http.StatusNotFound, err)
-		return
-	}
-
-	doc, err := shelf.Add(r.Context(), s.storage, file, uniqueName, name, disk, path)
-	if err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to add document to shelf: %v", err))
-		return
-	}
-
-	if err := s.shelfs.Save(r.Context(), shelf); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save shelf: %v", err))
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to upload document to shelf: %v", err))
 		return
 	}
 
@@ -150,20 +129,9 @@ func (s *documentServer) replaceDocument(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	shelf, err := s.fetchShelf(r.Context(), shelfID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, err)
-		return
-	}
-
-	replaced, err := shelf.Replace(r.Context(), s.storage, file, documentID)
+	replaced, err := s.client.ReplaceDocument(r.Context(), shelfID, documentID, file)
 	if err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to replace document: %v", err))
-		return
-	}
-
-	if err := s.shelfs.Save(r.Context(), shelf); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save shelf: %v", err))
 		return
 	}
 
@@ -193,47 +161,34 @@ func (s *documentServer) updateDocument(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	shelf, err := s.fetchShelf(r.Context(), shelfID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, err)
-		return
-	}
-
-	if req.Name != "" {
-		if _, err := shelf.RenameDocument(documentID, req.Name); err != nil {
-			api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to rename document: %v", err))
-			return
-		}
-	}
-
-	doc, err := shelf.Document(documentID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Document with UUID %q not found.", documentID))
+	cmd := document.Rename(shelfID, documentID, req.Name)
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
 
 	if req.UniqueName != nil {
 		if *req.UniqueName != "" {
-			if _, err := shelf.MakeUnique(documentID, *req.UniqueName); err != nil {
-				api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to give document a unique name: %v", err))
-				return
-			}
+			cmd = document.MakeUnique(shelfID, documentID, *req.UniqueName)
 		} else {
-			if _, err := shelf.MakeNonUnique(documentID); err != nil {
-				api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to remove unique name: %v", err))
-				return
-			}
+			cmd = document.MakeNonUnique(shelfID, documentID)
+		}
+
+		if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+			api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
+			return
 		}
 	}
 
-	if err := s.shelfs.Save(r.Context(), shelf); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save shelf: %v", err))
+	shelf, err := s.client.FetchShelf(r.Context(), shelfID)
+	if err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Shelf %q not found.", shelfID))
 		return
 	}
 
-	doc, err = shelf.Document(documentID)
+	doc, err := shelf.Document(documentID)
 	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Document with UUID %q not found.", documentID))
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Document %q not found.", documentID))
 		return
 	}
 
@@ -253,31 +208,13 @@ func (s *documentServer) deleteDocument(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	shelf, err := s.fetchShelf(r.Context(), shelfID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, err)
-		return
-	}
-
-	if err := shelf.Remove(r.Context(), s.storage, documentID); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to delete document: %v", err))
-		return
-	}
-
-	if err := s.shelfs.Save(r.Context(), shelf); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save shelf: %v", err))
+	cmd := document.Remove(shelfID, documentID)
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to remove document: %v", err))
 		return
 	}
 
 	api.NoContent(w, r)
-}
-
-func (s *documentServer) fetchShelf(ctx context.Context, id uuid.UUID) (*document.Shelf, error) {
-	shelf, err := s.shelfs.Fetch(ctx, id)
-	if err != nil {
-		return nil, api.Friendly(err, "Shelf with UUID %q not found.", id)
-	}
-	return shelf, nil
 }
 
 func (s *documentServer) addTags(w http.ResponseWriter, r *http.Request) {
@@ -302,20 +239,20 @@ func (s *documentServer) addTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shelf, err := s.fetchShelf(r.Context(), shelfID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, err)
+	cmd := document.Tag(shelfID, documentID, req.Tags)
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
 
-	doc, err := shelf.Tag(documentID, req.Tags...)
+	shelf, err := s.client.FetchShelf(r.Context(), shelfID)
 	if err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to tag document: %v", err))
-		return
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Shelf %q not found.", shelfID))
 	}
 
-	if err := s.shelfs.Save(r.Context(), shelf); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save shelf: %v", err))
+	doc, err := shelf.Document(documentID)
+	if err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Document %q not found.", documentID))
 		return
 	}
 
@@ -337,20 +274,20 @@ func (s *documentServer) removeTags(w http.ResponseWriter, r *http.Request) {
 
 	tags := strings.Split(chi.URLParam(r, "Tags"), ",")
 
-	shelf, err := s.fetchShelf(r.Context(), shelfID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, err)
+	cmd := document.Untag(shelfID, documentID, tags)
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
 
-	doc, err := shelf.Untag(documentID, tags...)
+	shelf, err := s.client.FetchShelf(r.Context(), shelfID)
 	if err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to untag document: %v", err))
-		return
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Shelf %q not found.", shelfID))
 	}
 
-	if err := s.shelfs.Save(r.Context(), shelf); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save shelf: %v", err))
+	doc, err := shelf.Document(documentID)
+	if err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Document %q not found.", documentID))
 		return
 	}
 
@@ -360,21 +297,15 @@ func (s *documentServer) removeTags(w http.ResponseWriter, r *http.Request) {
 type galleryServer struct {
 	chi.Router
 
-	galleries gallery.Repository
-	lookup    *gallery.Lookup
-	storage   media.Storage
+	client   Client
+	commands command.Bus
 }
 
-func newGalleryServer(
-	galleries gallery.Repository,
-	lookup *gallery.Lookup,
-	storage media.Storage,
-) *galleryServer {
+func newGalleryServer(client Client, commands command.Bus) *galleryServer {
 	srv := galleryServer{
-		Router:    chi.NewRouter(),
-		galleries: galleries,
-		lookup:    lookup,
-		storage:   storage,
+		Router:   chi.NewRouter(),
+		client:   client,
+		commands: commands,
 	}
 	srv.init()
 	return &srv
@@ -396,9 +327,14 @@ func (s *galleryServer) lookupName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := chi.URLParam(r, "Name")
-	id, ok := s.lookup.GalleryName(name)
+
+	id, ok, err := s.client.LookupGalleryByName(r.Context(), name)
+	if err != nil {
+		api.Error(w, r, http.StatusInternalServerError, err)
+		return
+	}
 	if !ok {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(nil, "Could not find Gallery named %q", name))
+		api.Error(w, r, http.StatusNotFound, api.Friendly(nil, "Lookup failed for gallery %q.", name))
 		return
 	}
 	resp.GalleryID = id
@@ -423,20 +359,9 @@ func (s *galleryServer) uploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	g, err := s.galleries.Fetch(r.Context(), galleryID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Gallery with UUID %q not found.", galleryID))
-		return
-	}
-
-	stack, err := g.Upload(r.Context(), s.storage, file, name, disk, path)
+	stack, err := s.client.UploadImage(r.Context(), galleryID, file, name, disk, path)
 	if err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to upload image: %v", err))
-		return
-	}
-
-	if err := s.galleries.Save(r.Context(), g); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save gallery: %v", err))
 		return
 	}
 
@@ -456,25 +381,9 @@ func (s *galleryServer) deleteStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	g, err := s.galleries.Fetch(r.Context(), galleryID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Gallery with UUID %q not found.", galleryID))
-		return
-	}
-
-	stack, err := g.Stack(stackID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Stack with UUID %q not found.", stackID))
-		return
-	}
-
-	if err := g.Delete(r.Context(), s.storage, stack); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to delete stack: %v", err))
-		return
-	}
-
-	if err := s.galleries.Save(r.Context(), g); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save gallery: %v", err))
+	cmd := gallery.DeleteStack(galleryID, stackID)
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
 
@@ -503,26 +412,21 @@ func (s *galleryServer) tagStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	g, err := s.galleries.Fetch(r.Context(), galleryID)
+	cmd := gallery.TagStack(galleryID, stackID, req.Tags)
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
+		return
+	}
+
+	g, err := s.client.FetchGallery(r.Context(), galleryID)
 	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Gallery with UUID %q not found.", galleryID))
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Gallery %q not found: %v", galleryID, err))
 		return
 	}
 
 	stack, err := g.Stack(stackID)
 	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Stack with UUID %q not found.", stackID))
-		return
-	}
-
-	if stack, err = g.Tag(r.Context(), stack, req.Tags...); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to tag image: %v", err))
-		return
-	}
-
-	if err := s.galleries.Save(r.Context(), g); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save gallery: %v", err))
-		return
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Stack %q not found.", stackID))
 	}
 
 	api.JSON(w, r, http.StatusCreated, stack)
@@ -543,29 +447,24 @@ func (s *galleryServer) untagStack(w http.ResponseWriter, r *http.Request) {
 
 	tags := strings.Split(chi.URLParam(r, "Tags"), ",")
 
-	g, err := s.galleries.Fetch(r.Context(), galleryID)
+	cmd := gallery.UntagStack(galleryID, stackID, tags)
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
+		return
+	}
+
+	g, err := s.client.FetchGallery(r.Context(), galleryID)
 	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Gallery with UUID %q not found.", galleryID))
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Gallery %q not found: %v", galleryID, err))
 		return
 	}
 
 	stack, err := g.Stack(stackID)
 	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Stack with UUID %q not found.", stackID))
-		return
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Stack %q not found.", stackID))
 	}
 
-	if stack, err = g.Untag(r.Context(), stack, tags...); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to untag image: %v", err))
-		return
-	}
-
-	if err := s.galleries.Save(r.Context(), g); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save gallery: %v", err))
-		return
-	}
-
-	api.JSON(w, r, http.StatusOK, stack)
+	api.JSON(w, r, http.StatusCreated, stack)
 }
 
 func (s *galleryServer) replaceImage(w http.ResponseWriter, r *http.Request) {
@@ -588,20 +487,9 @@ func (s *galleryServer) replaceImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	g, err := s.galleries.Fetch(r.Context(), galleryID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Gallery with UUID %q not found.", galleryID))
-		return
-	}
-
-	replaced, err := g.Replace(r.Context(), s.storage, file, stackID)
+	replaced, err := s.client.ReplaceImage(r.Context(), galleryID, stackID, file)
 	if err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to replace image: %v", err))
-		return
-	}
-
-	if err := s.galleries.Save(r.Context(), g); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save gallery: %v", err))
 		return
 	}
 
@@ -630,28 +518,23 @@ func (s *galleryServer) updateStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	g, err := s.galleries.Fetch(r.Context(), galleryID)
-	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Gallery with UUID %q not found.", galleryID))
-		return
-	}
-
 	if req.Name != "" {
-		if _, err := g.RenameStack(r.Context(), stackID, req.Name); err != nil {
-			api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to rename stack: %v", err))
+		cmd := gallery.RenameStack(galleryID, stackID, req.Name)
+		if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+			api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 			return
 		}
 	}
 
-	if err := s.galleries.Save(r.Context(), g); err != nil {
-		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to save gallery: %v", err))
+	g, err := s.client.FetchGallery(r.Context(), galleryID)
+	if err != nil {
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Gallery %q not found: %v", galleryID, err))
 		return
 	}
 
 	stack, err := g.Stack(stackID)
 	if err != nil {
-		api.Error(w, r, http.StatusNotFound, api.Friendly(err, "Stack with UUID %q not found.", stackID))
-		return
+		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Stack %q not found.", stackID))
 	}
 
 	api.JSON(w, r, http.StatusOK, stack)
