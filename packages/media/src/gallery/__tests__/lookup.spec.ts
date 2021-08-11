@@ -27,14 +27,14 @@ describe('lookupGalleryStackByName', () => {
 
     const name = 'foo'
     mock
-      .onGet(`/galleries/lookup/name/${name}`)
+      .onGet(`/galleries/${exampleUUID}/lookup/stack-name/${name}`)
       .reply(200, { stackId: exampleUUID })
 
     let id: string
     let found: boolean
     await expect(
       Promise.resolve().then(async () => {
-        const resp = await lookupGalleryStackByName(client, name)
+        const resp = await lookupGalleryStackByName(client, exampleUUID, name)
         id = resp.id
         found = resp.found
       })
@@ -48,13 +48,13 @@ describe('lookupGalleryStackByName', () => {
     const { client, mock } = createTestClient()
 
     const name = 'foo'
-    mock.onGet(`/galleries/lookup/name/${name}`).reply(404)
+    mock.onGet(`/galleries/${exampleUUID}/lookup/name/${name}`).reply(404)
 
     let id: string
     let found: boolean
     await expect(
       Promise.resolve().then(async () => {
-        const resp = await lookupGalleryStackByName(client, name)
+        const resp = await lookupGalleryStackByName(client, exampleUUID, name)
         id = resp.id
         found = resp.found
       })

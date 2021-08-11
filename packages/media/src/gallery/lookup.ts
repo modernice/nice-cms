@@ -2,21 +2,25 @@ import { nilUUID } from '@nice-cms/testing'
 import { AxiosError, AxiosInstance } from 'axios'
 
 /**
- * Lookup the UUID of the gallery with the given name.
- *
- * @returns UUID of the gallery with that name
+ * Looks up the UUID of the gallery with the given name.
  */
 export async function lookupGalleryByName(client: AxiosInstance, name: string) {
   const { data } = await client.get(`/galleries/lookup/name/${name}`)
   return data.galleryId as string
 }
 
+/**
+ * Looks up the UUID of the stack with the given name within the given gallery.
+ */
 export async function lookupGalleryStackByName(
   client: AxiosInstance,
+  galleryId: string,
   name: string
 ) {
   try {
-    const { data } = await client.get(`/galleries/lookup/name/${name}`)
+    const { data } = await client.get(
+      `/galleries/${galleryId}/lookup/stack-name/${name}`
+    )
     return {
       id: data.stackId as string,
       found: true,
