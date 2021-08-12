@@ -80,17 +80,18 @@ type Implementation struct {
 // New returns a new Gallery.
 func New(id uuid.UUID) *Gallery {
 	g := &Gallery{Base: aggregate.New(Aggregate, id)}
-	g.Implementation = NewImplementation(g)
-	g.applyEvent = EventApplier(g.Implementation)
+	g.Implementation, g.applyEvent = NewImplementation(g)
 	return g
 }
 
-// NewImplementation returns the implementation for the provided Gallery.
-func NewImplementation(gallery aggregate.Aggregate) *Implementation {
-	return &Implementation{
+// NewImplementation returns the Implementation for the provided Gallery and the
+// event applier for the implementation.
+func NewImplementation(gallery aggregate.Aggregate) (*Implementation, func(event.Event)) {
+	impl := &Implementation{
 		Stacks:  make([]Stack, 0),
 		gallery: gallery,
 	}
+	return impl, EventApplier(impl)
 }
 
 // Stack returns the Stack with the given UUID or ErrStackNotFound.
