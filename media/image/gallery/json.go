@@ -10,10 +10,10 @@ type JSONGallery struct {
 }
 
 // JSON returns the JSONGallery for g.
-func (g *Gallery) JSON() JSONGallery {
+func (g *Implementation) JSON() JSONGallery {
 	return JSONGallery{
-		ID:     g.ID,
-		Name:   g.Implementation.Name,
+		ID:     g.gallery.AggregateID(),
+		Name:   g.Name,
 		Stacks: g.Stacks,
 	}
 }
