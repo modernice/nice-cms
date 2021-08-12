@@ -65,6 +65,8 @@ type Repository interface {
 type Gallery struct {
 	*aggregate.Base
 	*Implementation
+
+	applyEvent func(event.Event)
 }
 
 // Implementation can be embedded into structs to implement a Gallery.
@@ -79,6 +81,7 @@ type Implementation struct {
 func New(id uuid.UUID) *Gallery {
 	g := &Gallery{Base: aggregate.New(Aggregate, id)}
 	g.Implementation = NewImplementation(g)
+	g.applyEvent = EventApplier(g.Implementation)
 	return g
 }
 
@@ -111,26 +114,8 @@ func (g *Implementation) FindByTag(tags ...string) []Stack {
 	return out
 }
 
-// ApplyEvent applies aggregate events.
 func (g *Gallery) ApplyEvent(evt event.Event) {
-	switch evt.Name() {
-	case Created:
-		g.create(evt)
-	case ImageUploaded:
-		g.uploadImage(evt)
-	case ImageReplaced:
-		g.replaceImage(evt)
-	case StackDeleted:
-		g.deleteStack(evt)
-	case StackTagged:
-		g.tagStack(evt)
-	case StackUntagged:
-		g.untagStack(evt)
-	case StackRenamed:
-		g.renameStack(evt)
-	case StackUpdated:
-		g.updateStack(evt)
-	}
+	g.applyEvent(evt)
 }
 
 // Create creates the Gallery with the given name.
@@ -495,4 +480,28 @@ func (r *goesRepository) Use(ctx context.Context, id uuid.UUID, fn func(*Gallery
 		return fmt.Errorf("save gallery: %w", err)
 	}
 	return nil
+}
+
+// EventApplier returns the event applier function for a gallery implementation.
+func EventApplier(impl *Implementation) func(event.Event) {
+	return func(evt event.Event) {
+		switch evt.Name() {
+		case Created:
+			impl.create(evt)
+		case ImageUploaded:
+			impl.uploadImage(evt)
+		case ImageReplaced:
+			impl.replaceImage(evt)
+		case StackDeleted:
+			impl.deleteStack(evt)
+		case StackTagged:
+			impl.tagStack(evt)
+		case StackUntagged:
+			impl.untagStack(evt)
+		case StackRenamed:
+			impl.renameStack(evt)
+		case StackUpdated:
+			impl.updateStack(evt)
+		}
+	}
 }
