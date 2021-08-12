@@ -70,6 +70,29 @@ type Gallery struct {
 }
 
 // Implementation can be embedded into structs to implement a Gallery.
+//
+//	type CustomGallery struct {
+//		*aggregate.Base
+//		*Implementation
+//
+//		applyEvent func(event.Event)
+//	}
+//
+//	func NewCustomGallery(id uuid.UUID) *Gallery {
+//		g := &CustomGallery{
+//			Base: aggregate.New("custom-gallery", id)
+//		}
+//		g.Implementation, g.applyEvent = gallery.NewImplementation(g)
+//	}
+//
+//	func (g *CustomGallery) ApplyEvent(evt event.Event) {
+//		g.applyEvent(evt)
+//
+//		switch evt.Name() {
+//		case "my.custom-gallery.some_event":
+//			// handle custom events
+//		}
+//	}
 type Implementation struct {
 	Name   string  `json:"name"`
 	Stacks []Stack `json:"stacks"`
