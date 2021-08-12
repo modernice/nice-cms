@@ -64,21 +64,34 @@ type Repository interface {
 // variants of the same image in different sizes.
 type Gallery struct {
 	*aggregate.Base
+	*Implementation
+}
 
-	Name   string
-	Stacks []Stack
+// Implementation can be embedded into structs to implement a Gallery.
+type Implementation struct {
+	Name   string  `json:"name"`
+	Stacks []Stack `json:"stacks"`
+
+	gallery aggregate.Aggregate
 }
 
 // New returns a new Gallery.
 func New(id uuid.UUID) *Gallery {
-	return &Gallery{
-		Base:   aggregate.New(Aggregate, id),
-		Stacks: make([]Stack, 0),
+	g := &Gallery{Base: aggregate.New(Aggregate, id)}
+	g.Implementation = NewImplementation(g)
+	return g
+}
+
+// NewImplementation returns the implementation for the provided Gallery.
+func NewImplementation(gallery aggregate.Aggregate) *Implementation {
+	return &Implementation{
+		Stacks:  make([]Stack, 0),
+		gallery: gallery,
 	}
 }
 
 // Stack returns the Stack with the given UUID or ErrStackNotFound.
-func (g *Gallery) Stack(id uuid.UUID) (Stack, error) {
+func (g *Implementation) Stack(id uuid.UUID) (Stack, error) {
 	for _, stack := range g.Stacks {
 		if stack.ID == id {
 			return stack.copy(), nil
@@ -88,7 +101,7 @@ func (g *Gallery) Stack(id uuid.UUID) (Stack, error) {
 }
 
 // FindByTag returns the Stacks that have all provided tags.
-func (g *Gallery) FindByTag(tags ...string) []Stack {
+func (g *Implementation) FindByTag(tags ...string) []Stack {
 	out := make([]Stack, 0)
 	for _, s := range g.Stacks {
 		if s.Original().HasTag(tags...) {
@@ -121,35 +134,35 @@ func (g *Gallery) ApplyEvent(evt event.Event) {
 }
 
 // Create creates the Gallery with the given name.
-func (g *Gallery) Create(name string) error {
+func (g *Implementation) Create(name string) error {
 	if g.Name != "" {
 		return ErrAlreadyCreated
 	}
 	if name = strings.TrimSpace(name); name == "" {
 		return ErrEmptyName
 	}
-	aggregate.NextEvent(g, Created, CreatedData{Name: name})
+	aggregate.NextEvent(g.gallery, Created, CreatedData{Name: name})
 	return nil
 }
 
-func (g *Gallery) create(evt event.Event) {
+func (g *Implementation) create(evt event.Event) {
 	data := evt.Data().(CreatedData)
 	g.Name = data.Name
 }
 
 // Upload uploads the image in r to storage and returns the Stack for that image.
-func (g *Gallery) Upload(ctx context.Context, storage media.Storage, r io.Reader, name, diskName, path string) (Stack, error) {
+func (g *Implementation) Upload(ctx context.Context, storage media.Storage, r io.Reader, name, diskName, path string) (Stack, error) {
 	stack, err := g.uploadWithID(ctx, storage, r, name, diskName, path, uuid.New())
 	if err != nil {
 		return stack, err
 	}
 
-	aggregate.NextEvent(g, ImageUploaded, ImageUploadedData{Stack: stack})
+	aggregate.NextEvent(g.gallery, ImageUploaded, ImageUploadedData{Stack: stack})
 
 	return stack, nil
 }
 
-func (g *Gallery) uploadWithID(
+func (g *Implementation) uploadWithID(
 	ctx context.Context,
 	storage media.Storage,
 	r io.Reader,
@@ -175,20 +188,20 @@ func (g *Gallery) uploadWithID(
 	return stack, nil
 }
 
-func (g *Gallery) checkCreated() error {
+func (g *Implementation) checkCreated() error {
 	if g.Name == "" {
 		return ErrNotCreated
 	}
 	return nil
 }
 
-func (g *Gallery) uploadImage(evt event.Event) {
+func (g *Implementation) uploadImage(evt event.Event) {
 	data := evt.Data().(ImageUploadedData)
 	g.Stacks = append(g.Stacks, data.Stack)
 }
 
 // Replace replaced the Images in the given Stack with the image in r.
-func (g *Gallery) Replace(ctx context.Context, storage media.Storage, r io.Reader, stackID uuid.UUID) (Stack, error) {
+func (g *Implementation) Replace(ctx context.Context, storage media.Storage, r io.Reader, stackID uuid.UUID) (Stack, error) {
 	stack, err := g.Stack(stackID)
 	if err != nil {
 		return stack, err
@@ -204,18 +217,18 @@ func (g *Gallery) Replace(ctx context.Context, storage media.Storage, r io.Reade
 		return stack, fmt.Errorf("upload image: %w", err)
 	}
 
-	aggregate.NextEvent(g, ImageReplaced, ImageReplacedData{Stack: replaced})
+	aggregate.NextEvent(g.gallery, ImageReplaced, ImageReplacedData{Stack: replaced})
 
 	return g.Stack(replaced.ID)
 }
 
-func (g *Gallery) replaceImage(evt event.Event) {
+func (g *Implementation) replaceImage(evt event.Event) {
 	data := evt.Data().(ImageReplacedData)
 	g.replace(data.Stack.ID, data.Stack)
 }
 
 // Delete deletes the given Stack from the Gallery and Storage.
-func (g *Gallery) Delete(ctx context.Context, storage media.Storage, stack Stack) error {
+func (g *Implementation) Delete(ctx context.Context, storage media.Storage, stack Stack) error {
 	if err := g.checkCreated(); err != nil {
 		return err
 	}
@@ -234,17 +247,17 @@ func (g *Gallery) Delete(ctx context.Context, storage media.Storage, stack Stack
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-concurrent.Wait(&wg):
-		aggregate.NextEvent(g, StackDeleted, StackDeletedData{Stack: stack})
+		aggregate.NextEvent(g.gallery, StackDeleted, StackDeletedData{Stack: stack})
 		return nil
 	}
 }
 
-func (g *Gallery) deleteStack(evt event.Event) {
+func (g *Implementation) deleteStack(evt event.Event) {
 	data := evt.Data().(StackDeletedData)
 	g.remove(data.Stack.ID)
 }
 
-func (g *Gallery) remove(id uuid.UUID) {
+func (g *Implementation) remove(id uuid.UUID) {
 	for i, stack := range g.Stacks {
 		if stack.ID == id {
 			g.Stacks = append(g.Stacks[:i], g.Stacks[i+1:]...)
@@ -254,19 +267,19 @@ func (g *Gallery) remove(id uuid.UUID) {
 }
 
 // Tag tags each Image in the provided Stack through the ImageService.
-func (g *Gallery) Tag(ctx context.Context, stack Stack, tags ...string) (Stack, error) {
+func (g *Implementation) Tag(ctx context.Context, stack Stack, tags ...string) (Stack, error) {
 	if err := g.checkCreated(); err != nil {
 		return Stack{}, err
 	}
 	tags = unique.Strings(tags...)
-	aggregate.NextEvent(g, StackTagged, StackTaggedData{
+	aggregate.NextEvent(g.gallery, StackTagged, StackTaggedData{
 		StackID: stack.ID,
 		Tags:    tags,
 	})
 	return g.Stack(stack.ID)
 }
 
-func (g *Gallery) tagStack(evt event.Event) {
+func (g *Implementation) tagStack(evt event.Event) {
 	data := evt.Data().(StackTaggedData)
 	stack, err := g.Stack(data.StackID)
 	if err != nil {
@@ -276,7 +289,7 @@ func (g *Gallery) tagStack(evt event.Event) {
 	g.replace(stack.ID, stack)
 }
 
-func (g *Gallery) replace(id uuid.UUID, stack Stack) error {
+func (g *Implementation) replace(id uuid.UUID, stack Stack) error {
 	for i, s := range g.Stacks {
 		if s.ID != id {
 			continue
@@ -294,19 +307,19 @@ func (g *Gallery) replace(id uuid.UUID, stack Stack) error {
 }
 
 // Untag removes tags from each Image of the provided Stack.
-func (g *Gallery) Untag(ctx context.Context, stack Stack, tags ...string) (Stack, error) {
+func (g *Implementation) Untag(ctx context.Context, stack Stack, tags ...string) (Stack, error) {
 	if err := g.checkCreated(); err != nil {
 		return Stack{}, err
 	}
 	tags = unique.Strings(tags...)
-	aggregate.NextEvent(g, StackUntagged, StackUntaggedData{
+	aggregate.NextEvent(g.gallery, StackUntagged, StackUntaggedData{
 		StackID: stack.ID,
 		Tags:    tags,
 	})
 	return g.Stack(stack.ID)
 }
 
-func (g *Gallery) untagStack(evt event.Event) {
+func (g *Implementation) untagStack(evt event.Event) {
 	data := evt.Data().(StackUntaggedData)
 	stack, err := g.Stack(data.StackID)
 	if err != nil {
@@ -317,7 +330,7 @@ func (g *Gallery) untagStack(evt event.Event) {
 }
 
 // RenameStack renames each Image in the given Stack to name.
-func (g *Gallery) RenameStack(ctx context.Context, stackID uuid.UUID, name string) (Stack, error) {
+func (g *Implementation) RenameStack(ctx context.Context, stackID uuid.UUID, name string) (Stack, error) {
 	if err := g.checkCreated(); err != nil {
 		return Stack{}, err
 	}
@@ -327,7 +340,7 @@ func (g *Gallery) RenameStack(ctx context.Context, stackID uuid.UUID, name strin
 		return Stack{}, err
 	}
 
-	aggregate.NextEvent(g, StackRenamed, StackRenamedData{
+	aggregate.NextEvent(g.gallery, StackRenamed, StackRenamedData{
 		StackID: stack.ID,
 		OldName: stack.Original().Name,
 		Name:    name,
@@ -336,7 +349,7 @@ func (g *Gallery) RenameStack(ctx context.Context, stackID uuid.UUID, name strin
 	return g.Stack(stack.ID)
 }
 
-func (g *Gallery) renameStack(evt event.Event) {
+func (g *Implementation) renameStack(evt event.Event) {
 	data := evt.Data().(StackRenamedData)
 	stack, err := g.Stack(data.StackID)
 	if err != nil {
@@ -353,19 +366,19 @@ func (g *Gallery) renameStack(evt event.Event) {
 //
 // It is illegal to update the UUID of a Stack. In such cases ErrStackCorrupted
 // is returned.
-func (g *Gallery) Update(id uuid.UUID, update func(Stack) Stack) error {
+func (g *Implementation) Update(id uuid.UUID, update func(Stack) Stack) error {
 	stack, err := g.Stack(id)
 	if err != nil {
 		return err
 	}
 
 	stack = update(stack)
-	aggregate.NextEvent(g, StackUpdated, StackUpdatedData{Stack: stack})
+	aggregate.NextEvent(g.gallery, StackUpdated, StackUpdatedData{Stack: stack})
 
 	return nil
 }
 
-func (g *Gallery) updateStack(evt event.Event) {
+func (g *Implementation) updateStack(evt event.Event) {
 	data := evt.Data().(StackUpdatedData)
 	g.replace(data.Stack.ID, data.Stack)
 }
@@ -375,12 +388,12 @@ type snapshot struct {
 }
 
 // MarshalSnapshot implements snapshot.Marshaler.
-func (g *Gallery) MarshalSnapshot() ([]byte, error) {
+func (g *Implementation) MarshalSnapshot() ([]byte, error) {
 	return json.Marshal(snapshot{Stacks: g.Stacks})
 }
 
 // UnmarshalSnapshot implements snapshot.Unmarshaler.
-func (g *Gallery) UnmarshalSnapshot(b []byte) error {
+func (g *Implementation) UnmarshalSnapshot(b []byte) error {
 	var snap snapshot
 	if err := json.Unmarshal(b, &snap); err != nil {
 		return err

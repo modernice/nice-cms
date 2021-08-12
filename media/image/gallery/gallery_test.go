@@ -44,8 +44,8 @@ func TestGallery_Create(t *testing.T) {
 		t.Fatalf("Create shouldn't fail with a %q name; failed with %q", name, err)
 	}
 
-	if g.Name != name {
-		t.Fatalf("Name should be %q; is %q", name, g.Name)
+	if g.Implementation.Name != name {
+		t.Fatalf("Name should be %q; is %q", name, g.Implementation.Name)
 	}
 
 	test.Change(t, g, gallery.Created, test.EventData(gallery.CreatedData{Name: name}))
@@ -59,8 +59,8 @@ func TestGallery_Create_emptyName(t *testing.T) {
 		t.Fatalf("Create with an empty name should fail with %q; got %q", gallery.ErrEmptyName, err)
 	}
 
-	if g.Name != "" {
-		t.Fatalf("Name should be %q; is %q", "", g.Name)
+	if g.Implementation.Name != "" {
+		t.Fatalf("Name should be %q; is %q", "", g.Implementation.Name)
 	}
 
 	test.NoChange(t, g, gallery.Created)

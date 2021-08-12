@@ -13,7 +13,7 @@ type JSONGallery struct {
 func (g *Gallery) JSON() JSONGallery {
 	return JSONGallery{
 		ID:     g.ID,
-		Name:   g.Name,
+		Name:   g.Implementation.Name,
 		Stacks: g.Stacks,
 	}
 }
