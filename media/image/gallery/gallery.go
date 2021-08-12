@@ -87,6 +87,17 @@ func (g *Gallery) Stack(id uuid.UUID) (Stack, error) {
 	return Stack{}, ErrStackNotFound
 }
 
+// FindByTag returns the Stacks that have all provided tags.
+func (g *Gallery) FindByTag(tags ...string) []Stack {
+	out := make([]Stack, 0)
+	for _, s := range g.Stacks {
+		if s.Original().HasTag(tags...) {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
 // ApplyEvent applies aggregate events.
 func (g *Gallery) ApplyEvent(evt event.Event) {
 	switch evt.Name() {

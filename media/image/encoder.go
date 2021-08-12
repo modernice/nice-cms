@@ -66,9 +66,11 @@ func NewEncoder(opts ...EncoderOption) Encoder {
 }
 
 func newEncoder(opts ...EncoderOption) *encoder {
+	jpgEnc := Func(JPEGEncoder)
 	enc := encoder{
 		encoders: map[string]FormatEncoder{
-			"jpeg": Func(JPEGEncoder),
+			"jpeg": jpgEnc,
+			"jpg":  jpgEnc,
 			"gif":  Func(GIFEncoder),
 			"":     Func(PNGEncoder),
 		},
