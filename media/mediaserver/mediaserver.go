@@ -15,15 +15,16 @@ import (
 	"github.com/modernice/nice-cms/media/image/gallery"
 )
 
-// Client is the media client.
-//
-// Use github.com/modernice/nice-cms/media/mediarpc.NewClient to get a grpc Client.
-type Client interface {
+// Use github.com/modernice/nice-cms/media/mediarpc.NewClient to get a gRPC DocumentClient.
+type DocumentClient interface {
 	LookupShelfByName(context.Context, string) (uuid.UUID, bool, error)
 	UploadDocument(_ context.Context, shelfID uuid.UUID, _ io.Reader, uniqueName, name, disk, path string) (document.Document, error)
 	ReplaceDocument(_ context.Context, shelfID, documentID uuid.UUID, _ io.Reader) (document.Document, error)
 	FetchShelf(context.Context, uuid.UUID) (document.JSONShelf, error)
+}
 
+// Use github.com/modernice/nice-cms/media/mediarpc.NewClient to get a gRPC GalleryClient.
+type GalleryClient interface {
 	LookupGalleryByName(context.Context, string) (uuid.UUID, bool, error)
 	LookupGalleryStackByName(_ context.Context, galleryID uuid.UUID, name string) (uuid.UUID, bool, error)
 	UploadImage(_ context.Context, galleryID uuid.UUID, _ io.Reader, name, disk, path string) (gallery.Stack, error)
@@ -31,51 +32,59 @@ type Client interface {
 	FetchGallery(context.Context, uuid.UUID) (gallery.JSONGallery, error)
 }
 
-type Option func(*config)
+// Server is the media server.
+type Server struct {
+	router chi.Router
 
-type config struct {
-	withoutDocuments bool
-	withoutGalleries bool
+	commands command.Bus
 }
 
-func WithoutDocuments() Option {
-	return func(cfg *config) {
-		cfg.withoutDocuments = true
+// Option is server option.
+type Option func(*Server)
+
+// WithGalleries returns an Option that adds gallery routes to the media server.
+func WithGalleries(client GalleryClient) Option {
+	return func(s *Server) {
+		s.router.Mount("/galleries", newGalleryServer(client, s.commands))
 	}
 }
 
-func WithoutGalleries() Option {
-	return func(cfg *config) {
-		cfg.withoutGalleries = true
+// WithDocuments returns an Option that adds document routes to the media server.
+func WithDocuments(client DocumentClient) Option {
+	return func(s *Server) {
+		s.router.Mount("/documents", newDocumentServer(client, s.commands))
 	}
 }
 
-// New returns the mediaserver as an http.Handler.
-func New(client Client, commands command.Bus, opts ...Option) http.Handler {
-	var cfg config
+// New returns the media server. Use the WithXXX Options to add routes to the
+// media server:
+//
+//	var commands command.Bus
+//	client := mediarpc.NewClient(...)
+//	srv := New(commands, WithDocuments(client), WithGalleries(client))
+func New(commands command.Bus, opts ...Option) *Server {
+	s := Server{
+		router:   chi.NewRouter(),
+		commands: commands,
+	}
 	for _, opt := range opts {
-		opt(&cfg)
+		opt(&s)
 	}
+	return &s
+}
 
-	r := chi.NewRouter()
-	if !cfg.withoutDocuments {
-		r.Mount("/documents", newDocumentServer(client, commands))
-	}
-	if !cfg.withoutGalleries {
-		r.Mount("/galleries", newGalleryServer(client, commands))
-	}
-
-	return r
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.router.ServeHTTP(w, r)
 }
 
 type documentServer struct {
 	chi.Router
 
-	client   Client
+	client   DocumentClient
 	commands command.Bus
 }
 
-func newDocumentServer(client Client, commands command.Bus) *documentServer {
+func newDocumentServer(client DocumentClient, commands command.Bus) *documentServer {
 	s := documentServer{
 		Router:   chi.NewRouter(),
 		client:   client,
@@ -347,11 +356,11 @@ func (s *documentServer) removeTags(w http.ResponseWriter, r *http.Request) {
 type galleryServer struct {
 	chi.Router
 
-	client   Client
+	client   GalleryClient
 	commands command.Bus
 }
 
-func newGalleryServer(client Client, commands command.Bus) *galleryServer {
+func newGalleryServer(client GalleryClient, commands command.Bus) *galleryServer {
 	srv := galleryServer{
 		Router:   chi.NewRouter(),
 		client:   client,
