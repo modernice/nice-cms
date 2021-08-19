@@ -94,11 +94,13 @@ type Gallery struct {
 //		}
 //	}
 type Implementation struct {
-	Name   string  `json:"name"`
-	Stacks []Stack `json:"stacks"`
+	Name   string `json:"name"`
+	Stacks Stacks `json:"stacks"`
 
 	gallery aggregate.Aggregate
 }
+
+type Stacks []Stack
 
 // New returns a new Gallery.
 func New(id uuid.UUID) *Gallery {
@@ -504,6 +506,20 @@ func (r *goesRepository) Use(ctx context.Context, id uuid.UUID, fn func(*Gallery
 		return fmt.Errorf("save gallery: %w", err)
 	}
 	return nil
+}
+
+func (stacks Stacks) FindByTags(tags ...string) Stacks {
+	var out Stacks
+	for _, s := range stacks {
+		org := s.Original()
+		for _, tag := range tags {
+			if org.HasTag(tag) {
+				out = append(out, s)
+				break
+			}
+		}
+	}
+	return out
 }
 
 // EventApplier returns the event applier function for a gallery implementation.

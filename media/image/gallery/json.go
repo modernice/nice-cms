@@ -6,7 +6,7 @@ import "github.com/google/uuid"
 type JSONGallery struct {
 	ID     uuid.UUID `json:"id"`
 	Name   string    `json:"name"`
-	Stacks []Stack   `json:"stacks"`
+	Stacks Stacks    `json:"stacks"`
 }
 
 // JSON returns the JSONGallery for g.
