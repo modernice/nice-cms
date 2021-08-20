@@ -136,7 +136,7 @@ func Middlewares(middlewares []func(http.Handler) http.Handler, routes ...Route)
 
 // New returns a route configuration.
 func New(opts ...Option) Routes {
-	var r Routes
+	r := Routes{middleware: make(map[Route][]func(http.Handler) http.Handler)}
 	for _, opt := range opts {
 		opt(&r)
 	}
