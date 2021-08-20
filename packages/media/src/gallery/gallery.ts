@@ -240,3 +240,31 @@ export async function untagGalleryStack(
 export function findGalleryStack(gallery: Gallery, stackId: string) {
   return gallery.stacks.find((stack) => stack.id === stackId)
 }
+
+/**
+ * Returns the first image of the stack with the given size name.
+ */
+export function findStackImageBySizeName(stack: Stack, size: string) {
+  return stack.images.find((img) => img.size === size)
+}
+
+/**
+ * Returns the first image of the stack with the given width.
+ */
+export function findStackImageByWidth(stack: Stack, width: number) {
+  return stack.images.find((img) => img.width === width)
+}
+
+/**
+ * Returns the first image of the stack with the given height.
+ */
+export function findStackImageByHeight(stack: Stack, height: number) {
+  return stack.images.find((img) => img.height === height)
+}
+
+/**
+ * Returns the original image of the stack.
+ */
+export function findOriginalStackImage(stack: Stack) {
+  return findStackImageBySizeName(stack, '')
+}
