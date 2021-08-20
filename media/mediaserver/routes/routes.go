@@ -51,13 +51,24 @@ func Disable(routes ...Route) Option {
 	}
 }
 
-func Middleware(middleware []func(http.Handler) http.Handler, routes ...Route) Option {
+func Middleware(middleware func(http.Handler) http.Handler, routes ...Route) Option {
 	if len(routes) == 0 {
 		routes = []Route{All}
 	}
 	return func(r *Routes) {
 		for _, route := range routes {
-			r.middleware[route] = append(r.middleware[route], middleware...)
+			r.middleware[route] = append(r.middleware[route], middleware)
+		}
+	}
+}
+
+func Middlewares(middlewares []func(http.Handler) http.Handler, routes ...Route) Option {
+	if len(routes) == 0 {
+		routes = []Route{All}
+	}
+	return func(r *Routes) {
+		for _, route := range routes {
+			r.middleware[route] = append(r.middleware[route], middlewares...)
 		}
 	}
 }
