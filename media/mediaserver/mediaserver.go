@@ -73,7 +73,7 @@ func WithDocuments(client DocumentClient, routePrefix string, opts ...routes.Opt
 //
 //	var commands command.Bus
 //	client := mediarpc.NewClient(...)
-//	srv := New(commands, WithDocuments(client), WithGalleries(client))
+//	srv := New(commands, WithDocuments(client, "/shelfs"), WithGalleries(client, "/galleries"))
 func New(commands command.Bus, opts ...Option) *Server {
 	s := Server{
 		router:   chi.NewRouter(),
