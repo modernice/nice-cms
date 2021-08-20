@@ -13,6 +13,7 @@ import (
 	"github.com/modernice/nice-cms/internal/api"
 	"github.com/modernice/nice-cms/media/document"
 	"github.com/modernice/nice-cms/media/image/gallery"
+	"github.com/modernice/nice-cms/media/mediaserver/routes"
 )
 
 // Use github.com/modernice/nice-cms/media/mediarpc.NewClient to get a gRPC DocumentClient.
@@ -43,16 +44,16 @@ type Server struct {
 type Option func(*Server)
 
 // WithGalleries returns an Option that adds gallery routes to the media server.
-func WithGalleries(client GalleryClient) Option {
+func WithGalleries(client GalleryClient, routePrefix string, opts ...routes.Option) Option {
 	return func(s *Server) {
-		s.router.Mount("/galleries", newGalleryServer(client, s.commands))
+		s.router.Mount(routePrefix, newGalleryServer(client, s.commands, routes.New(opts...)))
 	}
 }
 
 // WithDocuments returns an Option that adds document routes to the media server.
-func WithDocuments(client DocumentClient) Option {
+func WithDocuments(client DocumentClient, routePrefix string, opts ...routes.Option) Option {
 	return func(s *Server) {
-		s.router.Mount("/documents", newDocumentServer(client, s.commands))
+		s.router.Mount(routePrefix, newDocumentServer(client, s.commands, routes.New(opts...)))
 	}
 }
 
@@ -82,13 +83,15 @@ type documentServer struct {
 
 	client   DocumentClient
 	commands command.Bus
+	routes   routes.Routes
 }
 
-func newDocumentServer(client DocumentClient, commands command.Bus) *documentServer {
+func newDocumentServer(client DocumentClient, commands command.Bus, routes routes.Routes) *documentServer {
 	s := documentServer{
 		Router:   chi.NewRouter(),
 		client:   client,
 		commands: commands,
+		routes:   routes,
 	}
 	s.init()
 	return &s
@@ -358,28 +361,30 @@ type galleryServer struct {
 
 	client   GalleryClient
 	commands command.Bus
+	routes   routes.Routes
 }
 
-func newGalleryServer(client GalleryClient, commands command.Bus) *galleryServer {
+func newGalleryServer(client GalleryClient, commands command.Bus, routes routes.Routes) *galleryServer {
 	srv := galleryServer{
 		Router:   chi.NewRouter(),
 		client:   client,
 		commands: commands,
+		routes:   routes,
 	}
 	srv.init()
 	return &srv
 }
 
 func (s *galleryServer) init() {
-	s.Get("/lookup/name/{Name}", s.lookupName)
-	s.Get("/{GalleryID}/lookup/stack-name/{Name}", s.lookupStackName)
-	s.Get("/{GalleryID}", s.showGallery)
-	s.Post("/{GalleryID}/stacks", s.uploadImage)
-	s.Put("/{GalleryID}/stacks/{StackID}", s.replaceImage)
-	s.Patch("/{GalleryID}/stacks/{StackID}", s.updateStack)
-	s.Delete("/{GalleryID}/stacks/{StackID}", s.deleteStack)
-	s.Post("/{GalleryID}/stacks/{StackID}/tags", s.tagStack)
-	s.Delete("/{GalleryID}/stacks/{StackID}/tags/{Tags}", s.untagStack)
+	s.routes.Install(s, routes.LookupGalleryByName, http.HandlerFunc(s.lookupName))
+	s.routes.Install(s, routes.LookupGalleryStackByName, http.HandlerFunc(s.lookupStackName))
+	s.routes.Install(s, routes.ShowGallery, http.HandlerFunc(s.showGallery))
+	s.routes.Install(s, routes.UploadImage, http.HandlerFunc(s.uploadImage))
+	s.routes.Install(s, routes.ReplaceImage, http.HandlerFunc(s.replaceImage))
+	s.routes.Install(s, routes.UpdateStack, http.HandlerFunc(s.updateStack))
+	s.routes.Install(s, routes.DeleteStack, http.HandlerFunc(s.deleteStack))
+	s.routes.Install(s, routes.TagStack, http.HandlerFunc(s.tagStack))
+	s.routes.Install(s, routes.UntagStack, http.HandlerFunc(s.untagStack))
 }
 
 func (s *galleryServer) lookupName(w http.ResponseWriter, r *http.Request) {
