@@ -75,7 +75,7 @@ func (r Routes) Disabled(route Route) bool {
 }
 
 func (r Routes) Middleware(route Route) []func(http.Handler) http.Handler {
-	return r.middleware[route]
+	return append(r.middleware[All], r.middleware[route]...)
 }
 
 func (r Routes) Install(router chi.Router, route Route, h http.Handler) {
