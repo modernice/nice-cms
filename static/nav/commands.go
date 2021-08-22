@@ -33,8 +33,13 @@ func RegisterCommands(r command.Registry) {
 }
 
 // HandleCommands handles navigation commands until ctx is canceled. The
-// returned error channel is also closed when ctx is canceled.
-func HandleCommands(ctx context.Context, bus command.Bus, repo Repository, lookup *Lookup) (<-chan error, error) {
+// returned error channel is also closed when ctx is canceled. Calls
+// RegisterCommands(reg) before subscribing to commands.
+func HandleCommands(ctx context.Context, reg command.Registry, bus command.Bus, repo Repository, lookup *Lookup) (<-chan error, error) {
+	if reg != nil {
+		RegisterCommands(reg)
+	}
+
 	h := command.NewHandler(bus)
 
 	errs, err := h.Handle(ctx, CreateCommand, func(ctx command.Context) error {

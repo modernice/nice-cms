@@ -107,8 +107,13 @@ func RegisterCommands(r command.Registry) {
 	r.Register(UntagCommand, func() command.Payload { return untagPayload{} })
 }
 
-// HandleCommand handles commands until ctx is canceled.
-func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, storage media.Storage) <-chan error {
+// HandleCommand handles commands until ctx is canceled. Calls
+// RegisterCommands(reg) before subscribing to commands.
+func HandleCommands(ctx context.Context, reg command.Registry, bus command.Bus, shelfs Repository, storage media.Storage) <-chan error {
+	if reg != nil {
+		RegisterCommands(reg)
+	}
+
 	h := command.NewHandler(bus)
 
 	createErrors := h.MustHandle(ctx, CreateShelfCommand, func(ctx command.Context) error {

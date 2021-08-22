@@ -35,7 +35,7 @@ func TestCreateCmd(t *testing.T) {
 	lookup, errs := newLookup(t, ctx, ebus, estore)
 	panicOn(errs)
 
-	errs = handleCommands(t, ctx, cbus, repo, lookup)
+	errs = handleCommands(t, ctx, creg, cbus, repo, lookup)
 	panicOn(errs)
 
 	items := []nav.Item{
@@ -75,7 +75,7 @@ func TestCreateCmd_duplicateName(t *testing.T) {
 	lookup, errs := newLookup(t, ctx, ebus, estore)
 	panicOn(errs)
 
-	errs = handleCommands(t, ctx, cbus, repo, lookup)
+	errs = handleCommands(t, ctx, creg, cbus, repo, lookup)
 	go discard.Errors(errs)
 
 	items := []nav.Item{
@@ -107,8 +107,8 @@ func newLookup(t *testing.T, ctx context.Context, bus event.Bus, store event.Sto
 	return l, errs
 }
 
-func handleCommands(t *testing.T, ctx context.Context, cbus command.Bus, repo nav.Repository, lookup *nav.Lookup) <-chan error {
-	errs, err := nav.HandleCommands(ctx, cbus, repo, lookup)
+func handleCommands(t *testing.T, ctx context.Context, creg command.Registry, cbus command.Bus, repo nav.Repository, lookup *nav.Lookup) <-chan error {
+	errs, err := nav.HandleCommands(ctx, creg, cbus, repo, lookup)
 	if err != nil {
 		t.Fatalf("handle commands: %v", err)
 	}

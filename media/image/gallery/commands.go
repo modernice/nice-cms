@@ -85,6 +85,7 @@ func UpdateStack(galleryID uuid.UUID, stack Stack) command.Command {
 	return command.New(UpdateStackCommand, updateStackPayload{Stack: stack}, command.Aggregate(Aggregate, galleryID))
 }
 
+// RegisterCommands register the gallery commands into a command registry.
 func RegisterCommands(r command.Registry) {
 	r.Register(CreateCommand, func() command.Payload { return createPayload{} })
 	r.Register(DeleteStackCommand, func() command.Payload { return deleteStackPayload{} })
@@ -94,8 +95,13 @@ func RegisterCommands(r command.Registry) {
 	r.Register(UpdateStackCommand, func() command.Payload { return updateStackPayload{} })
 }
 
-// HandleCommands handles commands until ctx is canceled.
-func HandleCommands(ctx context.Context, h *command.Handler, galleries Repository, storage media.Storage) <-chan error {
+// HandleCommands handles commands until ctx is canceled. Calls
+// RegisterCommands(reg) before subscribing to commands.
+func HandleCommands(ctx context.Context, reg command.Registry, h *command.Handler, galleries Repository, storage media.Storage) <-chan error {
+	if reg != nil {
+		RegisterCommands(reg)
+	}
+
 	createErrors := h.MustHandle(ctx, CreateCommand, func(ctx command.Context) error {
 		cmd := ctx.Command()
 		load := cmd.Payload().(createPayload)
