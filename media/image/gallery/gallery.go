@@ -119,6 +119,11 @@ func NewImplementation(gallery aggregate.Aggregate) (*Implementation, func(event
 	return impl, EventApplier(impl)
 }
 
+// Created returns whether the Gallery has been created by using g.Create.
+func (g *Implementation) Created() bool {
+	return g.Name != ""
+}
+
 // Stack returns the Stack with the given UUID or ErrStackNotFound.
 func (g *Implementation) Stack(id uuid.UUID) (Stack, error) {
 	for _, stack := range g.Stacks {
