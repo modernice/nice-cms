@@ -14,6 +14,8 @@ import (
 	"github.com/modernice/nice-cms/media/document"
 	"github.com/modernice/nice-cms/media/image/gallery"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Server is the media gRPC server.
@@ -72,7 +74,7 @@ func (s *Server) UploadDocument(stream protomedia.MediaService_UploadDocumentSer
 
 	meta := req.GetMetadata()
 	if meta == nil {
-		return errors.New("missing metadata")
+		return status.Error(codes.InvalidArgument, "missing metadata")
 	}
 
 	receiveError := make(chan error)
@@ -142,7 +144,7 @@ func (s *Server) ReplaceDocument(stream protomedia.MediaService_ReplaceDocumentS
 
 	meta := req.GetMetadata()
 	if meta == nil {
-		return errors.New("missing metadata")
+		return status.Error(codes.InvalidArgument, "missing metadata")
 	}
 
 	receiveError := make(chan error)
@@ -206,7 +208,7 @@ func (s *Server) ReplaceDocument(stream protomedia.MediaService_ReplaceDocumentS
 func (s *Server) FetchShelf(ctx context.Context, id *protocommon.UUID) (*protomedia.Shelf, error) {
 	shelf, err := s.shelfs.Fetch(ctx, ptypes.UUID(id))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return ptypes.ShelfProto(shelf.JSON()), nil
 }
@@ -235,7 +237,7 @@ func (s *Server) UploadImage(stream protomedia.MediaService_UploadImageServer) e
 
 	meta := req.GetMetadata()
 	if meta == nil {
-		return errors.New("missing metadata")
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	receiveError := make(chan error)
@@ -304,7 +306,7 @@ func (s *Server) ReplaceImage(stream protomedia.MediaService_ReplaceImageServer)
 
 	meta := req.GetMetadata()
 	if meta == nil {
-		return errors.New("missing metadata")
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	receiveError := make(chan error)
@@ -368,7 +370,7 @@ func (s *Server) ReplaceImage(stream protomedia.MediaService_ReplaceImageServer)
 func (s *Server) FetchGallery(ctx context.Context, id *protocommon.UUID) (*protomedia.Gallery, error) {
 	g, err := s.galleries.Fetch(ctx, ptypes.UUID(id))
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return ptypes.GalleryProto(g.JSON()), nil
 }
@@ -413,7 +415,7 @@ func (c *Client) UploadDocument(
 			},
 		},
 	}); err != nil {
-		return document.Document{}, fmt.Errorf("send metadata: %w", err)
+		return document.Document{}, fmt.Errorf("send metadata: %w", stream.RecvMsg(nil))
 	}
 
 	buf := make([]byte, 512)
@@ -431,7 +433,7 @@ L:
 		if err := stream.Send(&protomedia.UploadDocumentReq{
 			UploadData: &protomedia.UploadDocumentReq_Chunk{Chunk: buf[:n]},
 		}); err != nil {
-			return document.Document{}, fmt.Errorf("send chunk: %w", err)
+			return document.Document{}, fmt.Errorf("send chunk: %w", stream.RecvMsg(nil))
 		}
 	}
 
@@ -458,7 +460,7 @@ func (c *Client) ReplaceDocument(ctx context.Context, shelfID, documentID uuid.U
 			},
 		},
 	}); err != nil {
-		return document.Document{}, fmt.Errorf("send metadata: %w", err)
+		return document.Document{}, fmt.Errorf("send metadata: %w", stream.RecvMsg(nil))
 	}
 
 	buf := make([]byte, 512)
@@ -476,7 +478,7 @@ L:
 		if err := stream.Send(&protomedia.ReplaceDocumentReq{
 			ReplaceData: &protomedia.ReplaceDocumentReq_Chunk{Chunk: buf[:n]},
 		}); err != nil {
-			return document.Document{}, fmt.Errorf("send chunk: %w", err)
+			return document.Document{}, fmt.Errorf("send chunk: %w", stream.RecvMsg(nil))
 		}
 	}
 
@@ -531,7 +533,7 @@ func (c *Client) UploadImage(ctx context.Context, galleryID uuid.UUID, r io.Read
 			},
 		},
 	}); err != nil {
-		return gallery.Stack{}, fmt.Errorf("send metadata: %w", err)
+		return gallery.Stack{}, fmt.Errorf("send metadata: %w", stream.RecvMsg(nil))
 	}
 
 	buf := make([]byte, 512)
@@ -548,7 +550,7 @@ L:
 		if err := stream.Send(&protomedia.UploadImageReq{
 			UploadData: &protomedia.UploadImageReq_Chunk{Chunk: buf[:n]},
 		}); err != nil {
-			return gallery.Stack{}, fmt.Errorf("send chunk: %w", err)
+			return gallery.Stack{}, fmt.Errorf("send chunk: %w", stream.RecvMsg(nil))
 		}
 	}
 
@@ -574,7 +576,7 @@ func (c *Client) ReplaceImage(ctx context.Context, galleryID, stackID uuid.UUID,
 			},
 		},
 	}); err != nil {
-		return gallery.Stack{}, fmt.Errorf("send metadata: %w", err)
+		return gallery.Stack{}, fmt.Errorf("send metadata: %w", stream.RecvMsg(nil))
 	}
 
 	buf := make([]byte, 512)
@@ -593,7 +595,7 @@ L:
 				Chunk: buf[:n],
 			},
 		}); err != nil {
-			return gallery.Stack{}, fmt.Errorf("send chunk: %w", err)
+			return gallery.Stack{}, fmt.Errorf("send chunk: %w", stream.RecvMsg(nil))
 		}
 	}
 
