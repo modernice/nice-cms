@@ -11,15 +11,15 @@ var All = route("*", "*")
 
 // Gallery routes
 var (
-	LookupGalleryByName      = route("GET", "/lookup/name/{Name}")
-	LookupGalleryStackByName = route("GET", "/{GalleryID}/lookup/stack-name/{Name}")
-	ShowGallery              = route("GET", "/{GalleryID}")
-	UploadImage              = route("POST", "/{GalleryID}/stacks")
-	ReplaceImage             = route("PUT", "/{GalleryID}/stacks/{StackID}")
-	UpdateStack              = route("PATCH", "/{GalleryID}/stacks/{StackID}")
-	DeleteStack              = route("DELETE", "/{GalleryID}/stacks/{StackID}")
-	TagStack                 = route("POST", "/{GalleryID}/stacks/{StackID}/tags")
-	UntagStack               = route("DELETE", "/{GalleryID}/stacks/{StackID}/tags/{Tags}")
+	LookupGalleryByName      = route("GET", "/galleries/lookup/name/{Name}")
+	LookupGalleryStackByName = route("GET", "/galleries/{GalleryID}/lookup/stack-name/{Name}")
+	ShowGallery              = route("GET", "/galleries/{GalleryID}")
+	UploadImage              = route("POST", "/galleries/{GalleryID}/stacks")
+	ReplaceImage             = route("PUT", "/galleries/{GalleryID}/stacks/{StackID}")
+	UpdateStack              = route("PATCH", "/galleries/{GalleryID}/stacks/{StackID}")
+	DeleteStack              = route("DELETE", "/galleries/{GalleryID}/stacks/{StackID}")
+	TagStack                 = route("POST", "/galleries/{GalleryID}/stacks/{StackID}/tags")
+	UntagStack               = route("DELETE", "/galleries/{GalleryID}/stacks/{StackID}/tags/{Tags}")
 
 	GalleryReadRoutes = [...]Route{
 		LookupGalleryByName,
@@ -51,14 +51,14 @@ var (
 
 // Document routes
 var (
-	LookupShelfByName = route("GET", "/lookup/name/{Name}")
-	ShowShelf         = route("GET", "/{ShelfID}")
-	UploadDocument    = route("POST", "/{ShelfID}/documents")
-	ReplaceDocument   = route("PUT", "/{ShelfID}/documents/{DocumentID}")
-	UpdateDocument    = route("PATCH", "/{ShelfID}/documents/{DocumentID}")
-	DeleteDocument    = route("DELETE", "/{ShelfID}/documents/{DocumentID}")
-	TagDocument       = route("POST", "/{ShelfID}/documents/{DocumentID}/tags")
-	UntagDocument     = route("DELETE", "/{ShelfID}/documents/{DocumentID}/tags/{Tags}")
+	LookupShelfByName = route("GET", "/shelfs/lookup/name/{Name}")
+	ShowShelf         = route("GET", "/shelfs/{ShelfID}")
+	UploadDocument    = route("POST", "/shelfs/{ShelfID}/documents")
+	ReplaceDocument   = route("PUT", "/shelfs/{ShelfID}/documents/{DocumentID}")
+	UpdateDocument    = route("PATCH", "/shelfs/{ShelfID}/documents/{DocumentID}")
+	DeleteDocument    = route("DELETE", "/shelfs/{ShelfID}/documents/{DocumentID}")
+	TagDocument       = route("POST", "/shelfs/{ShelfID}/documents/{DocumentID}/tags")
+	UntagDocument     = route("DELETE", "/shelfs/{ShelfID}/documents/{DocumentID}/tags/{Tags}")
 
 	DocumentReadRoutes = [...]Route{
 		LookupShelfByName,

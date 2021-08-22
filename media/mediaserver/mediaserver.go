@@ -16,11 +16,6 @@ import (
 	"github.com/modernice/nice-cms/media/mediaserver/routes"
 )
 
-var (
-	DefaultGalleriesPrefix = "/galleries"
-	DefaultShelfsPrefix    = "/shelfs"
-)
-
 // Use github.com/modernice/nice-cms/media/mediarpc.NewClient to get a gRPC DocumentClient.
 type DocumentClient interface {
 	LookupShelfByName(context.Context, string) (uuid.UUID, bool, error)
@@ -49,22 +44,16 @@ type Server struct {
 type Option func(*Server)
 
 // WithGalleries returns an Option that adds gallery routes to the media server.
-func WithGalleries(client GalleryClient, routePrefix string, opts ...routes.Option) Option {
-	if routePrefix == "" {
-		routePrefix = DefaultGalleriesPrefix
-	}
+func WithGalleries(client GalleryClient, opts ...routes.Option) Option {
 	return func(s *Server) {
-		s.router.Mount(routePrefix, newGalleryServer(client, s.commands, routes.New(opts...)))
+		s.router.Mount("/", newGalleryServer(client, s.commands, routes.New(opts...)))
 	}
 }
 
 // WithDocuments returns an Option that adds document routes to the media server.
 func WithDocuments(client DocumentClient, routePrefix string, opts ...routes.Option) Option {
-	if routePrefix == "" {
-		routePrefix = DefaultShelfsPrefix
-	}
 	return func(s *Server) {
-		s.router.Mount(routePrefix, newDocumentServer(client, s.commands, routes.New(opts...)))
+		s.router.Mount("/", newDocumentServer(client, s.commands, routes.New(opts...)))
 	}
 }
 
