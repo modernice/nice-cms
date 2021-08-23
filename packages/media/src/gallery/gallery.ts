@@ -244,27 +244,61 @@ export function findGalleryStack(gallery: Gallery, stackId: string) {
 /**
  * Returns the first image of the stack with the given size name.
  */
-export function findStackImageBySizeName(stack: Stack, size: string) {
-  return stack.images.find((img) => img.size === size)
+export function findStackImageBySizeName(
+  stack: Stack,
+  size: string,
+  options?: {
+    fallbackOriginal: boolean
+  }
+) {
+  const img = stack.images.find((img) => img.size === size)
+  if (!img && options?.fallbackOriginal) {
+    return findOriginalStackImage(stack)
+  }
+  return img
 }
 
 /**
  * Returns the first image of the stack with the given width.
  */
-export function findStackImageByWidth(stack: Stack, width: number) {
-  return stack.images.find((img) => img.width === width)
+export function findStackImageByWidth(
+  stack: Stack,
+  width: number,
+  options?: {
+    fallbackOriginal: boolean
+  }
+) {
+  const img = stack.images.find((img) => img.width === width)
+  if (!img && options?.fallbackOriginal) {
+    return findOriginalStackImage(stack)
+  }
+  return img
 }
 
 /**
  * Returns the first image of the stack with the given height.
  */
-export function findStackImageByHeight(stack: Stack, height: number) {
-  return stack.images.find((img) => img.height === height)
+export function findStackImageByHeight(
+  stack: Stack,
+  height: number,
+  options?: {
+    fallbackOriginal: boolean
+  }
+) {
+  const img = stack.images.find((img) => img.height === height)
+  if (!img && options?.fallbackOriginal) {
+    return findOriginalStackImage(stack)
+  }
+  return img
 }
 
 /**
  * Returns the original image of the stack.
  */
 export function findOriginalStackImage(stack: Stack) {
-  return findStackImageBySizeName(stack, '')
+  for (const img of stack.images) {
+    if (img.original) {
+      return img
+    }
+  }
 }
