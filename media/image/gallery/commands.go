@@ -12,11 +12,11 @@ import (
 // Gallery commands
 const (
 	CreateCommand      = "cms.media.image.gallery.create"
-	DeleteStackCommand = "cms.media.image.gallery.stack_deleted"
-	TagStackCommand    = "cms.media.image.gallery.stack_tagged"
-	UntagStackCommand  = "cms.media.image.gallery.stack_untagged"
-	RenameStackCommand = "cms.media.image.gallery.stack_renamed"
-	UpdateStackCommand = "cms.media.image.gallery.stack_updated"
+	DeleteStackCommand = "cms.media.image.gallery.delete_stack"
+	TagStackCommand    = "cms.media.image.gallery.tag_stack"
+	UntagStackCommand  = "cms.media.image.gallery.untag_stack"
+	RenameStackCommand = "cms.media.image.gallery.rename_stack"
+	UpdateStackCommand = "cms.media.image.gallery.update_stack"
 )
 
 type createPayload struct {
