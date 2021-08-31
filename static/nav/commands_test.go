@@ -108,11 +108,7 @@ func newLookup(t *testing.T, ctx context.Context, bus event.Bus, store event.Sto
 }
 
 func handleCommands(t *testing.T, ctx context.Context, creg command.Registry, cbus command.Bus, repo nav.Repository, lookup *nav.Lookup) <-chan error {
-	errs, err := nav.HandleCommands(ctx, cbus, repo, lookup)
-	if err != nil {
-		t.Fatalf("handle commands: %v", err)
-	}
-	return errs
+	return nav.HandleCommands(ctx, cbus, repo, lookup)
 }
 
 func panicOn(errs <-chan error) {

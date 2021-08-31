@@ -73,7 +73,8 @@ func TestPage_Add_notCreated(t *testing.T) {
 }
 
 func TestPage_Add(t *testing.T) {
-	p, _ := page.Create("foo")
+	p := page.New(uuid.New())
+	p.Create("foo")
 
 	f := field.NewInt("foo", 3)
 	f2 := field.NewInt("bar", 5)
@@ -103,7 +104,8 @@ func TestPage_Add(t *testing.T) {
 }
 
 func TestPage_Add_duplicate(t *testing.T) {
-	p, _ := page.Create("foo")
+	p := page.New(uuid.New())
+	p.Create("foo")
 
 	f := field.NewInt("foo", 3)
 	if err := p.Add(f); err != nil {
@@ -118,7 +120,8 @@ func TestPage_Add_duplicate(t *testing.T) {
 }
 
 func TestPage_Add_duplicates(t *testing.T) {
-	p, _ := page.Create("foo")
+	p := page.New(uuid.New())
+	p.Create("foo")
 
 	fields := []field.Field{
 		field.NewText("foo", "Foo"),
@@ -144,7 +147,8 @@ func TestPage_Remove_notFound(t *testing.T) {
 }
 
 func TestPage_Remove(t *testing.T) {
-	p, _ := page.Create("foo")
+	p := page.New(uuid.New())
+	p.Create("foo")
 
 	f := field.NewInt("foo", 1)
 	f2 := field.NewInt("bar", 1)
@@ -171,7 +175,8 @@ func TestPage_Remove(t *testing.T) {
 }
 
 func TestPage_Remove_guarded(t *testing.T) {
-	p, _ := page.Create("foo", field.NewText("foo", "Foo"))
+	p := page.New(uuid.New())
+	p.Create("foo", field.NewText("foo", "Foo"))
 
 	if err := p.Remove("foo"); !errors.Is(err, page.ErrGuarded) {
 		t.Fatalf("Remove should fail with %q; got %q", page.ErrGuarded, err)
@@ -187,7 +192,8 @@ func TestPage_Field_notFound(t *testing.T) {
 }
 
 func TestPage_Field(t *testing.T) {
-	p, _ := page.Create("foo")
+	p := page.New(uuid.New())
+	p.Create("foo")
 
 	f := field.NewInt("foo", 1)
 	if err := p.Add(f); err != nil {
