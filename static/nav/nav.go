@@ -40,6 +40,11 @@ type Repository interface {
 	// Fetch returns the Nav with the given UUID.
 	Fetch(context.Context, uuid.UUID) (*Nav, error)
 
+	// Use fetches the Nav with the given UUID, calls the provided function with
+	// the Nav as the argument and then saves the Nav. If the provided function
+	// returns a non-nil error, the Nav is not saved and that error is returned.
+	Use(context.Context, uuid.UUID, func(*Nav) error) error
+
 	// Delete deletes the given Nav.
 	Delete(context.Context, *Nav) error
 }
@@ -576,6 +581,20 @@ func (r *goesRepository) Fetch(ctx context.Context, id uuid.UUID) (*Nav, error) 
 		return n, fmt.Errorf("goes: %w", err)
 	}
 	return n, nil
+}
+
+func (r *goesRepository) Use(ctx context.Context, id uuid.UUID, fn func(*Nav) error) error {
+	n, err := r.Fetch(ctx, id)
+	if err != nil {
+		return fmt.Errorf("fetch nav: %w", err)
+	}
+	if err := fn(n); err != nil {
+		return err
+	}
+	if err := r.Save(ctx, n); err != nil {
+		return fmt.Errorf("save nav: %w", err)
+	}
+	return nil
 }
 
 func (r *goesRepository) Delete(ctx context.Context, n *Nav) error {
