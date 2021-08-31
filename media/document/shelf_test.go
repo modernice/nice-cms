@@ -54,7 +54,7 @@ func TestShelf_Create(t *testing.T) {
 		t.Fatalf("Name should be %q; is %q", exampleShelfName, shelf.Name)
 	}
 
-	test.Change(t, shelf, document.ShelfCreated, test.WithEventData(document.ShelfCreatedData{Name: exampleShelfName}))
+	test.Change(t, shelf, document.ShelfCreated, test.EventData(document.ShelfCreatedData{Name: exampleShelfName}))
 }
 
 func TestShelf_Create_alreadyCreated(t *testing.T) {
@@ -66,7 +66,7 @@ func TestShelf_Create_alreadyCreated(t *testing.T) {
 		t.Fatalf("Create should fail with %q if the Shelf was already created; got %q", document.ErrShelfAlreadyCreated, err)
 	}
 
-	test.Change(t, shelf, document.ShelfCreated, test.WithEventData(document.ShelfCreatedData{Name: exampleShelfName}), test.Exactly(1))
+	test.Change(t, shelf, document.ShelfCreated, test.EventData(document.ShelfCreatedData{Name: exampleShelfName}), test.Exactly(1))
 }
 
 func TestShelf_Create_emptyName(t *testing.T) {
@@ -133,7 +133,7 @@ func TestShelf_Add(t *testing.T) {
 		t.Fatalf("Filesize should be %d; is %d", len(examplePDF), doc.Filesize)
 	}
 
-	test.Change(t, shelf, document.DocumentAdded, test.WithEventData(document.DocumentAddedData{Document: doc}))
+	test.Change(t, shelf, document.DocumentAdded, test.EventData(document.DocumentAddedData{Document: doc}))
 
 	disk, err := storage.Disk(doc.Disk)
 	if err != nil {
@@ -169,7 +169,7 @@ func TestShelf_Add_duplicateUniqueName(t *testing.T) {
 		t.Fatalf("Add should fail with %q; got %q", document.ErrDuplicateUniqueName, err)
 	}
 
-	test.Change(t, shelf, document.DocumentAdded, test.WithEventData(document.DocumentAddedData{Document: doc}), test.Exactly(1))
+	test.Change(t, shelf, document.DocumentAdded, test.EventData(document.DocumentAddedData{Document: doc}), test.Exactly(1))
 }
 
 func TestShelf_Remove_notCreated(t *testing.T) {
@@ -212,7 +212,7 @@ func TestShelf_Remove(t *testing.T) {
 		t.Fatalf("document should be deleted from storage")
 	}
 
-	test.Change(t, shelf, document.DocumentRemoved, test.WithEventData(document.DocumentRemovedData{Document: doc}))
+	test.Change(t, shelf, document.DocumentRemoved, test.EventData(document.DocumentRemovedData{Document: doc}))
 }
 
 func TestShelf_Remove_failingStorage(t *testing.T) {
@@ -244,7 +244,7 @@ func TestShelf_Remove_failingStorage(t *testing.T) {
 		t.Fatalf("Document should return %q for a deleted Document; got %q", document.ErrNotFound, err)
 	}
 
-	test.Change(t, shelf, document.DocumentRemoved, test.WithEventData(document.DocumentRemovedData{
+	test.Change(t, shelf, document.DocumentRemoved, test.EventData(document.DocumentRemovedData{
 		Document:    doc,
 		DeleteError: mockError.Error(),
 	}))
@@ -286,7 +286,7 @@ func TestShelf_Replace(t *testing.T) {
 		t.Fatalf("Filesize should be %d; is %d", len(examplePDF2), replaced.Filesize)
 	}
 
-	test.Change(t, shelf, document.DocumentReplaced, test.WithEventData(document.DocumentReplacedData{
+	test.Change(t, shelf, document.DocumentReplaced, test.EventData(document.DocumentReplacedData{
 		Document: replaced,
 	}))
 }
@@ -321,7 +321,7 @@ func TestShelf_RenameDocument(t *testing.T) {
 		t.Fatalf("Rename returned wrong Document. want=%v got=%v", renamed, doc)
 	}
 
-	test.Change(t, shelf, document.DocumentRenamed, test.WithEventData(document.DocumentRenamedData{
+	test.Change(t, shelf, document.DocumentRenamed, test.EventData(document.DocumentRenamedData{
 		DocumentID: doc.ID,
 		OldName:    exampleName,
 		Name:       "New name",
@@ -358,7 +358,7 @@ func TestShelf_MakeUnique(t *testing.T) {
 		t.Fatalf("Find returned wrong Document. want=%v got=%v", unique, doc)
 	}
 
-	test.Change(t, shelf, document.DocumentMadeUnique, test.WithEventData(document.DocumentMadeUniqueData{
+	test.Change(t, shelf, document.DocumentMadeUnique, test.EventData(document.DocumentMadeUniqueData{
 		DocumentID: doc.ID,
 		UniqueName: exampleUniqueName,
 	}))
@@ -460,7 +460,7 @@ func TestShelf_MakeNonUnique(t *testing.T) {
 		t.Fatalf("UniqueName should be %q; is %q", "", nonunique.UniqueName)
 	}
 
-	test.Change(t, shelf, document.DocumentMadeNonUnique, test.WithEventData(document.DocumentMadeNonUniqueData{
+	test.Change(t, shelf, document.DocumentMadeNonUnique, test.EventData(document.DocumentMadeNonUniqueData{
 		DocumentID: doc.ID,
 		UniqueName: exampleUniqueName,
 	}))
@@ -501,7 +501,7 @@ func TestShelf_Tag_Untag(t *testing.T) {
 		t.Fatalf("Document returned wrong Document. want=%v got=%v", tagged, doc)
 	}
 
-	test.Change(t, shelf, document.DocumentTagged, test.WithEventData(document.DocumentTaggedData{
+	test.Change(t, shelf, document.DocumentTagged, test.EventData(document.DocumentTaggedData{
 		DocumentID: tagged.ID,
 		Tags:       want,
 	}))
@@ -529,7 +529,7 @@ func TestShelf_Tag_Untag(t *testing.T) {
 		t.Fatalf("Document returned wrong Document. want=%v got=%v", untagged, doc)
 	}
 
-	test.Change(t, shelf, document.DocumentUntagged, test.WithEventData(document.DocumentUntaggedData{
+	test.Change(t, shelf, document.DocumentUntagged, test.EventData(document.DocumentUntaggedData{
 		DocumentID: untagged.ID,
 		Tags:       []string{"bar"},
 	}))

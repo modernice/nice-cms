@@ -29,7 +29,7 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("Name should be %q; is %q", name, p.Name)
 	}
 
-	test.Change(t, p, page.Created, test.WithEventData(page.CreatedData{Name: name}))
+	test.Change(t, p, page.Created, test.EventData(page.CreatedData{Name: name}))
 }
 
 func TestCreate_withFields(t *testing.T) {
@@ -55,7 +55,7 @@ func TestCreate_withFields(t *testing.T) {
 		}
 	}
 
-	test.Change(t, p, page.FieldsAdded, test.WithEventData(page.FieldsAddedData{
+	test.Change(t, p, page.FieldsAdded, test.EventData(page.FieldsAddedData{
 		Fields: guarded(fields...),
 	}))
 }
@@ -97,7 +97,7 @@ func TestPage_Add(t *testing.T) {
 		t.Fatalf("added field should be %v; is %v", f2, added)
 	}
 
-	test.Change(t, p, page.FieldsAdded, test.WithEventData(page.FieldsAddedData{Fields: []field.Field{f, f2}}))
+	test.Change(t, p, page.FieldsAdded, test.EventData(page.FieldsAddedData{Fields: []field.Field{f, f2}}))
 }
 
 func TestPage_Add_duplicate(t *testing.T) {
@@ -112,7 +112,7 @@ func TestPage_Add_duplicate(t *testing.T) {
 		t.Fatalf("Add should fail with %q; got %q", page.ErrDuplicateField, err)
 	}
 
-	test.Change(t, p, page.FieldsAdded, test.WithEventData(page.FieldsAddedData{Fields: []field.Field{f}}), test.Exactly(1))
+	test.Change(t, p, page.FieldsAdded, test.EventData(page.FieldsAddedData{Fields: []field.Field{f}}), test.Exactly(1))
 }
 
 func TestPage_Add_duplicates(t *testing.T) {
@@ -165,7 +165,7 @@ func TestPage_Remove(t *testing.T) {
 		t.Fatalf("Field(%q) failed with %q", "bar", err)
 	}
 
-	test.Change(t, p, page.FieldsRemoved, test.WithEventData(page.FieldsRemovedData{Fields: []string{"foo", "baz"}}))
+	test.Change(t, p, page.FieldsRemoved, test.EventData(page.FieldsRemovedData{Fields: []string{"foo", "baz"}}))
 }
 
 func TestPage_Remove_guarded(t *testing.T) {

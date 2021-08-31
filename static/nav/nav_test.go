@@ -39,7 +39,7 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("ID should be %q; is %q", name, tree.Name)
 	}
 
-	test.Change(t, tree, nav.Created, test.WithEventData(nav.CreatedData{Name: name}))
+	test.Change(t, tree, nav.Created, test.EventData(nav.CreatedData{Name: name}))
 }
 
 func TestCreate_withItems(t *testing.T) {
@@ -67,8 +67,8 @@ func TestCreate_withItems(t *testing.T) {
 		t.Fatalf("Item(%q) failed with %q", "contact", err)
 	}
 
-	test.Change(t, tree, nav.Created, test.WithEventData(nav.CreatedData{Name: name}))
-	test.Change(t, tree, nav.ItemsAdded, test.WithEventData(nav.ItemsAddedData{
+	test.Change(t, tree, nav.Created, test.EventData(nav.CreatedData{Name: name}))
+	test.Change(t, tree, nav.ItemsAdded, test.EventData(nav.ItemsAddedData{
 		Items: initialItems(label, link),
 		Index: 0,
 	}))
@@ -94,12 +94,12 @@ func TestNav_Append(t *testing.T) {
 		t.Fatalf("Tree should have %v items", []string{"foo", "bar", "baz"})
 	}
 
-	test.Change(t, tree, nav.ItemsAdded, test.WithEventData(nav.ItemsAddedData{
+	test.Change(t, tree, nav.ItemsAdded, test.EventData(nav.ItemsAddedData{
 		Items: initialItems(items[:1]...),
 		Index: 0,
 	}))
 
-	test.Change(t, tree, nav.ItemsAdded, test.WithEventData(nav.ItemsAddedData{
+	test.Change(t, tree, nav.ItemsAdded, test.EventData(nav.ItemsAddedData{
 		Items: items[1:],
 		Index: 1,
 	}))
@@ -133,12 +133,12 @@ func TestNav_Insert(t *testing.T) {
 		t.Fatalf("Items should be %v; is %v", want, tree.Items)
 	}
 
-	test.Change(t, tree, nav.ItemsAdded, test.WithEventData(nav.ItemsAddedData{
+	test.Change(t, tree, nav.ItemsAdded, test.EventData(nav.ItemsAddedData{
 		Items: initialItems(items[:2]...),
 		Index: 0,
 	}))
 
-	test.Change(t, tree, nav.ItemsAdded, test.WithEventData(nav.ItemsAddedData{
+	test.Change(t, tree, nav.ItemsAdded, test.EventData(nav.ItemsAddedData{
 		Items: items[2:],
 		Index: 1,
 	}))
@@ -179,7 +179,7 @@ func TestNav_InsertAt(t *testing.T) {
 		t.Fatalf("New failed with %q", err)
 	}
 
-	test.Change(t, navi, nav.ItemsAdded, test.WithEventData(nav.ItemsAddedData{
+	test.Change(t, navi, nav.ItemsAdded, test.EventData(nav.ItemsAddedData{
 		Items: initialItems(items...),
 		Index: 0,
 	}))
@@ -204,7 +204,7 @@ func TestNav_InsertAt(t *testing.T) {
 		t.Fatalf("item.Tree.Items should be\n\n%v\n\nis\n\n%v\n\n%s\n", want, item.Tree.Items, cmp.Diff(want, item.Tree.Items))
 	}
 
-	test.Change(t, navi, nav.ItemsAdded, test.WithEventData(nav.ItemsAddedData{
+	test.Change(t, navi, nav.ItemsAdded, test.EventData(nav.ItemsAddedData{
 		Items: moreItems,
 		Index: 1,
 		Path:  "bar.baz",
@@ -255,7 +255,7 @@ func TestNav_Remove(t *testing.T) {
 		t.Fatalf("Item(%q) failed with %q", "qux", err)
 	}
 
-	test.Change(t, tree, nav.ItemsRemoved, test.WithEventData(nav.ItemsRemovedData{
+	test.Change(t, tree, nav.ItemsRemoved, test.EventData(nav.ItemsRemovedData{
 		Items: []string{"bar", "baz"},
 	}))
 }
@@ -296,7 +296,7 @@ func TestNav_Remove_nested(t *testing.T) {
 		t.Fatalf("%q Item should not be removed", "bar.bar")
 	}
 
-	test.Change(t, tree, nav.ItemsRemoved, test.WithEventData(nav.ItemsRemovedData{
+	test.Change(t, tree, nav.ItemsRemoved, test.EventData(nav.ItemsRemovedData{
 		Items: []string{"bar.bar.foo", "baz"},
 	}))
 }
@@ -377,7 +377,7 @@ func TestNav_Sort(t *testing.T) {
 			}
 
 			if !tt.noChange {
-				test.Change(t, tree, nav.Sorted, test.WithEventData(nav.SortedData{Sorting: tt.wantEventSorting}))
+				test.Change(t, tree, nav.Sorted, test.EventData(nav.SortedData{Sorting: tt.wantEventSorting}))
 			}
 		})
 	}
@@ -451,7 +451,7 @@ func TestNav_SortAt(t *testing.T) {
 			}
 
 			if !tt.noChange {
-				test.Change(t, tree, nav.Sorted, test.WithEventData(nav.SortedData{
+				test.Change(t, tree, nav.Sorted, test.EventData(nav.SortedData{
 					Sorting: tt.wantEventSorting,
 					Path:    "bar.baz",
 				}))
