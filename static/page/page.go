@@ -62,27 +62,6 @@ type Page struct {
 	Fields []field.Field
 }
 
-// Create creates the Page with the given name. Create(name, fields...) is a shortcut for
-//	p := New(uuid.New())
-//	err := p.Create("foo", fields...)
-//
-// Fields passed to Create are added to the Page as guarded Fields that cannot
-// be removed. To add removable Fields to a Page p, use p.Add instead:
-//	p, _ := page.Create("foo")
-//	p.Add(field.NewText(...), field.NewToggle(...))
-func Create(name string, fields ...field.Field) (*Page, error) {
-	p := New(uuid.New())
-	if err := p.Create(name); err != nil {
-		return nil, err
-	}
-	if len(fields) > 0 {
-		if err := p.Add(guarded(fields...)...); err != nil {
-			return p, err
-		}
-	}
-	return p, nil
-}
-
 // New returns a new Page. You probably want to use Create instead.
 func New(id uuid.UUID) *Page {
 	return &Page{
@@ -91,6 +70,7 @@ func New(id uuid.UUID) *Page {
 	}
 }
 
+// Field returns the Field with the given name, or ErrFieldNotFound.
 func (p *Page) Field(name string) (field.Field, error) {
 	for _, f := range p.Fields {
 		if f.Name == name {
@@ -128,6 +108,7 @@ func (p *Page) create(evt event.Event) {
 	p.Name = data.Name
 }
 
+// Add adds fields to the page.
 func (p *Page) Add(fields ...field.Field) error {
 	if err := p.checkCreated(); err != nil {
 		return err
@@ -155,6 +136,7 @@ func (p *Page) addFields(evt event.Event) {
 	p.Fields = append(p.Fields, data.Fields...)
 }
 
+// Remove removes the fields with the given names from the page.
 func (p *Page) Remove(fields ...string) error {
 	fields = unique.Strings(fields...)
 
