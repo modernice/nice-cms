@@ -11,17 +11,18 @@ import (
 	"github.com/modernice/nice-cms/static/page/field"
 )
 
-func TestCreate_emptyName(t *testing.T) {
+func TestPage_Create_emptyName(t *testing.T) {
+	p := page.New(uuid.New())
 	name := " "
-	if _, err := page.Create(name); !errors.Is(err, page.ErrEmptyName) {
+	if err := p.Create(name); !errors.Is(err, page.ErrEmptyName) {
 		t.Fatalf("Create should fail with %q; got %q", page.ErrEmptyName, err)
 	}
 }
 
-func TestCreate(t *testing.T) {
+func TestPage_Create(t *testing.T) {
+	p := page.New(uuid.New())
 	name := "foo"
-	p, err := page.Create(name)
-	if err != nil {
+	if err := p.Create(name); err != nil {
 		t.Fatalf("Create failed with %q", err)
 	}
 
@@ -32,15 +33,16 @@ func TestCreate(t *testing.T) {
 	test.Change(t, p, page.Created, test.EventData(page.CreatedData{Name: name}))
 }
 
-func TestCreate_withFields(t *testing.T) {
+func TestPage_Create_withFields(t *testing.T) {
+	p := page.New(uuid.New())
+
 	fields := []field.Field{
 		field.NewText("foo", "Foo"),
 		field.NewInt("bar", 1),
 		field.NewToggle("baz", false),
 	}
 
-	p, err := page.Create("foo", fields...)
-	if err != nil {
+	if err := p.Create("foo", fields...); err != nil {
 		t.Fatalf("Create failed with %q", err)
 	}
 

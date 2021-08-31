@@ -94,13 +94,25 @@ func (p *Page) Field(name string) (field.Field, error) {
 	return field.Field{}, ErrFieldNotFound
 }
 
-// Create creates the page by giving it a name.
-func (p *Page) Create(name string) error {
+// Create creates the Page with the given name.
+//
+// Fields passed to Create are added to the Page as guarded Fields that cannot
+// be removed. To add removable Fields to a Page p, use p.Add instead:
+//	p := page.New(uuid.New())
+//	p.Create("foo")
+//	p.Add(field.NewText(...), field.NewToggle(...))
+func (p *Page) Create(name string, fields ...field.Field) error {
 	if name = strings.TrimSpace(name); name == "" {
 		return ErrEmptyName
 	}
 
 	aggregate.NextEvent(p, Created, CreatedData{Name: name})
+
+	if len(fields) > 0 {
+		if err := p.Add(guarded(fields...)...); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
