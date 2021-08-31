@@ -44,6 +44,12 @@ type Repository interface {
 	// Fetch fetches the Page with the given UUID.
 	Fetch(context.Context, uuid.UUID) (*Page, error)
 
+	// Use fetches the Page with the given UUID, calls the provided function
+	// with the Page as the argument and then saves the Page. If the provided
+	// function returns a non-nil error, Use does not save the Page and returns
+	// that error.
+	Use(context.Context, uuid.UUID, func(*Page) error) error
+
 	// Delete deletes a Page.
 	Delete(context.Context, *Page) error
 }
@@ -222,6 +228,20 @@ func (r *goesRepository) Fetch(ctx context.Context, id uuid.UUID) (*Page, error)
 		return nil, err
 	}
 	return p, nil
+}
+
+func (r *goesRepository) Use(ctx context.Context, id uuid.UUID, fn func(*Page) error) error {
+	p, err := r.Fetch(ctx, id)
+	if err != nil {
+		return fmt.Errorf("fetch page: %w", err)
+	}
+	if err := fn(p); err != nil {
+		return err
+	}
+	if err := r.Save(ctx, p); err != nil {
+		return fmt.Errorf("save page: %w", err)
+	}
+	return nil
 }
 
 func (r *goesRepository) Delete(ctx context.Context, p *Page) error {
