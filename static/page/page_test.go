@@ -205,6 +205,37 @@ func TestPage_Field(t *testing.T) {
 	}
 }
 
+// func TestPage_UpdateField(t *testing.T) {
+// 	p := page.New(uuid.New())
+// 	p.Create("foo")
+// 	p.Add(field.NewInt("foo", 1))
+// 	p.Add(field.NewMoney("bar", currency.NewAmountFromInt64(10000, "EUR")))
+
+// 	if err := p.UpdateField("foo", 3, "en", "de"); err != nil {
+// 		t.Fatalf("UpdateField() failed with %q", err)
+// 	}
+
+// 	if err := p.UpdateField("bar", 3); err != nil {
+// 		t.Fatalf("UpdateField() failed with %q", err)
+// 	}
+
+// 	f, _ := p.Field("foo")
+
+// 	if val := f.Value("en"); val != "3" {
+// 		t.Fatalf("field value should be %q; is %q", "3", val)
+// 	}
+
+// 	if val := f.Value("de"); val != "3" {
+// 		t.Fatalf("field value should be %q; is %q", "3", val)
+// 	}
+
+// 	test.Change(t, p, page.FieldUpdated, test.EventData(page.FieldUpdatedData{
+// 		Field:   "foo",
+// 		Value:   "3",
+// 		Locales: []string{"en", "de"},
+// 	}))
+// }
+
 func guarded(fields ...field.Field) []field.Field {
 	out := make([]field.Field, len(fields))
 	for i, f := range fields {

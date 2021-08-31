@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bojanz/currency"
 	"github.com/modernice/nice-cms/static/page/field"
 	"github.com/modernice/nice-cms/static/page/metadata"
+	"github.com/radical-app/money"
+	"github.com/radical-app/money/moneyfmt"
 )
 
 func TestNew(t *testing.T) {
@@ -172,7 +173,7 @@ func TestNewFloat(t *testing.T) {
 
 func TestNewMoney(t *testing.T) {
 	name := "foo"
-	def, _ := currency.NewAmount("195.95", "USD")
+	def := money.EUR(150000)
 	f := field.NewMoney(name, def)
 
 	if f.Name != name {
@@ -183,13 +184,11 @@ func TestNewMoney(t *testing.T) {
 		t.Fatalf("Type should be %q; is %q", field.Money, f.Type)
 	}
 
-	formatter := currency.NewFormatter(currency.NewLocale("en"))
-
 	tests := map[string]string{
-		"":   formatter.Format(def),
-		" ":  formatter.Format(def),
-		"en": formatter.Format(def),
-		"de": formatter.Format(def),
+		"":   moneyfmt.MustDisplay(def, "en"),
+		" ":  moneyfmt.MustDisplay(def, "en"),
+		"en": moneyfmt.MustDisplay(def, "en"),
+		"de": moneyfmt.MustDisplay(def, "en"),
 	}
 
 	for locale, want := range tests {

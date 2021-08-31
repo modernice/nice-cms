@@ -4,25 +4,24 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bojanz/currency"
 	"github.com/modernice/nice-cms/static/page/field"
-	"github.com/modernice/nice-cms/static/page/field/money"
+	moneyfield "github.com/modernice/nice-cms/static/page/field/money"
+	"github.com/radical-app/money"
+	"github.com/radical-app/money/moneyfmt"
 )
 
 func TestLocalize(t *testing.T) {
-	amount, _ := currency.NewAmount("30.25", "USD")
-	otherAmount, _ := currency.NewAmount("49.95", "EUR")
-	f := field.NewMoney("foo", amount, money.Localize(otherAmount, "de", "ch"))
-
-	formatter := currency.NewFormatter(currency.NewLocale("en"))
+	amount := money.USD(3025)
+	otherAmount := money.EUR(4995)
+	f := field.NewMoney("foo", amount, moneyfield.Localize(otherAmount, "de", "ch"))
 
 	tests := map[string]string{
-		"":    formatter.Format(amount),
-		" ":   formatter.Format(amount),
-		"en":  formatter.Format(amount),
-		"abc": formatter.Format(amount),
-		"de":  formatter.Format(otherAmount),
-		"ch":  formatter.Format(otherAmount),
+		"":    moneyfmt.MustDisplay(amount, "en"),
+		" ":   moneyfmt.MustDisplay(amount, "en"),
+		"en":  moneyfmt.MustDisplay(amount, "en"),
+		"abc": moneyfmt.MustDisplay(amount, "abc"),
+		"de":  moneyfmt.MustDisplay(otherAmount, "de"),
+		"ch":  moneyfmt.MustDisplay(otherAmount, "ch"),
 	}
 
 	for locale, want := range tests {

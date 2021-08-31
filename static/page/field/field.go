@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/bojanz/currency"
-	"github.com/modernice/nice-cms/internal/money"
 	"github.com/modernice/nice-cms/static/page/metadata"
+	"github.com/radical-app/money"
+	"github.com/radical-app/money/moneyfmt"
 )
 
 // Built-in field types
@@ -105,8 +105,8 @@ func floatToString(v float64) string {
 }
 
 // NewMoney returns a Money field.
-func NewMoney(name string, defaultValue currency.Amount, opts ...Option) Field {
-	return New(name, Money, money.Format(defaultValue), opts...)
+func NewMoney(name string, defaultValue money.Money, opts ...Option) Field {
+	return New(name, Money, moneyfmt.MustDisplay(defaultValue, "en"), opts...)
 }
 
 // NewMeta returns a Meta field.
