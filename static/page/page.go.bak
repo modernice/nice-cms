@@ -171,6 +171,54 @@ func (p *Page) removeField(name string) {
 	}
 }
 
+func (p *Page) UpdateField(fieldName string, value interface{}, locales ...string) error {
+	if _, err := p.Field(fieldName); err != nil {
+		return err
+	}
+
+	var strval string
+	switch v := value.(type) {
+	case string:
+		strval = v
+	case fmt.Stringer:
+		strval = v.String()
+	default:
+		strval = fmt.Sprint(v)
+	}
+
+	aggregate.NextEvent(p, FieldUpdated, FieldUpdatedData{
+		Field:   fieldName,
+		Value:   strval,
+		Locales: locales,
+	})
+
+	return nil
+}
+
+func (p *Page) updateField(evt event.Event) {
+	data := evt.Data().(FieldUpdatedData)
+
+	f, err := p.Field(data.Field)
+	if err != nil {
+		return
+	}
+
+	locales := make([]string, len(data.Locales))
+	copy(locales, data.Locales)
+
+	if len(locales) == 0 {
+		for _, f := range p.Fields {
+			for locale := range f.Values {
+				locales = append(locales, locale)
+			}
+		}
+	}
+
+	for _, locale := range locales {
+		f.Values[locale] = data.Value
+	}
+}
+
 func (p *Page) checkCreated() error {
 	if p.Name == "" {
 		return ErrNotCreated
@@ -187,6 +235,8 @@ func (p *Page) ApplyEvent(evt event.Event) {
 		p.addFields(evt)
 	case FieldsRemoved:
 		p.removeFields(evt)
+	case FieldUpdated:
+		p.updateField(evt)
 	}
 }
 
