@@ -13,7 +13,7 @@
 		"build": "siroc build"
 	},
 	"dependencies": {
-		"axios": "^0.21.1",
+		"axios": "^0.21.2",
 		"wretch": "^1.7.6"
 	}
 }
