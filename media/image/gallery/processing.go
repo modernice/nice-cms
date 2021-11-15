@@ -159,10 +159,10 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 
 	resizer := (image.Resizer)(r)
 
-	ctx.cfg.logf("[Resizer] Resize image. (StackID=%v Sizes=%v)", s.ID, resizer)
+	ctx.cfg.logf("[Resizer] Resize image (StackID=%v Sizes=%v)", s.ID, resizer)
 	start := time.Now()
 	resized := resizer.Resize(original)
-	ctx.cfg.logf("[Resizer] Resize done. (StackID=%v Duration=%v)", s.ID, time.Since(start))
+	ctx.cfg.logf("[Resizer] Resize done (StackID=%v Duration=%v)", s.ID, time.Since(start))
 
 	encoded := make(map[string]*bytes.Buffer)
 
@@ -181,13 +181,13 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 
 		img := media.NewImage(0, 0, org.Name, org.Disk, path, 0)
 
-		ctx.cfg.logf("[Resizer] Upload resized image. (StackID=%v Size=%v)", s.ID, size)
+		ctx.cfg.logf("[Resizer] Upload resized image (StackID=%v Size=%v)", s.ID, size)
 		start := time.Now()
 		img, err := img.Upload(ctx, buf, storage)
 		if err != nil {
 			return fmt.Errorf("upload %q (%s): %w", path, org.Disk, err)
 		}
-		ctx.cfg.logf("[Resizer] Upload done. (StackID=%v Duration=%v)", s.ID, time.Since(start))
+		ctx.cfg.logf("[Resizer] Upload done (StackID=%v Duration=%v)", s.ID, time.Since(start))
 
 		resizedImages = append(resizedImages, Image{
 			Image: img,
@@ -246,14 +246,14 @@ func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 				return
 			}
 
-			ctx.cfg.logf("[PNGCompressor]: Compress image.")
+			ctx.cfg.logf("[PNGCompressor]: Compress image (StackID=%v Disk=%v Path=%v)", stack.ID, img.Disk, img.Path)
 			start := time.Now()
 			compressed, err := c.Compress(stdimg)
 			if err != nil {
 				fail(fmt.Errorf("compress image with compression level %d: %w", c.CompressionLevel(), err))
 				return
 			}
-			ctx.cfg.logf("[PNGCompressor]: Image compressed. (Duration=%v)", time.Since(start))
+			ctx.cfg.logf("[PNGCompressor]: Image compressed (StackID=%v Disk=%v Path=%v Duration=%v)", stack.ID, img.Disk, img.Path, time.Since(start))
 
 			var buf bytes.Buffer
 			if err := ctx.Encode(&buf, compressed, format); err != nil {
@@ -261,14 +261,14 @@ func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 				return
 			}
 
-			ctx.cfg.logf("[PNGCompressor]: Replace storage image. (Disk=%v Path=%v)", img.Disk, img.Path)
+			ctx.cfg.logf("[PNGCompressor]: Replace storage image (StackID=%v Disk=%v Path=%v)", stack.ID, img.Disk, img.Path)
 			start = time.Now()
 			replaced, err := img.Replace(ctx, &buf, storage)
 			if err != nil {
 				fail(fmt.Errorf("replace image %q (%s): %w", img.Path, img.Disk, err))
 				return
 			}
-			ctx.cfg.logf("[PNGCompressor]: Storage image replaced. (Disk=%v Path=%v Duration=%v)", img.Disk, img.Path, time.Since(start))
+			ctx.cfg.logf("[PNGCompressor]: Storage image replaced (StackID=%v Disk=%v Path=%v Duration=%v)", stack.ID, img.Disk, img.Path, time.Since(start))
 
 			stack.Images[i].Image = replaced
 		}(img, i)
@@ -405,7 +405,7 @@ func (svc *PostProcessor) work(
 		go func() {
 			defer wg.Done()
 			for job := range queue {
-				cfg.logf("Received processing job. (GalleryID=%v StackID=%v)", job.galleryID, job.stackID)
+				cfg.logf("Received processing job (GalleryID=%v StackID=%v)", job.galleryID, job.stackID)
 
 				g, err := svc.galleries.Fetch(ctx, job.galleryID)
 				if err != nil {
@@ -419,7 +419,7 @@ func (svc *PostProcessor) work(
 					continue
 				}
 
-				cfg.logf("Processing stack. (ID=%v)", stack.ID)
+				cfg.logf("Processing stack (ID=%v)", stack.ID)
 				start := time.Now()
 
 				processed, err := svc.Process(ctx, stack, pipe, WithDebugger(cfg.logger))
@@ -428,7 +428,7 @@ func (svc *PostProcessor) work(
 					continue
 				}
 
-				cfg.logf("Processing done. (StackID=%v Duration=%v)", stack.ID, time.Since(start))
+				cfg.logf("Processing done (StackID=%v Duration=%v)", stack.ID, time.Since(start))
 
 				// Re-fetch Gallery to avoid concurrency errors if the processing took long.
 				g, err = svc.galleries.Fetch(ctx, g.ID)
