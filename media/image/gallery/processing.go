@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/modernice/goes/event"
@@ -24,13 +25,20 @@ import (
 type ProcessorContext struct {
 	context.Context
 
+	cfg     processorConfig
 	stack   Stack
 	encoder image.Encoder
 	storage media.Storage
 }
 
+// Printer is the interface for a logger.
+type Printer interface {
+	Print(v ...interface{})
+}
+
 func newProcessorContext(
 	ctx context.Context,
+	cfg processorConfig,
 	stack Stack,
 	imageEncoder image.Encoder,
 	storage media.Storage,
@@ -40,6 +48,7 @@ func newProcessorContext(
 	}
 	return &ProcessorContext{
 		Context: ctx,
+		cfg:     cfg,
 		stack:   stack,
 		encoder: imageEncoder,
 		storage: storage,
@@ -84,19 +93,39 @@ func (ctx *ProcessorContext) Update(fn func(Stack) Stack) error {
 // on a given Stack to post-process an image.
 type ProcessingPipeline []Processor
 
+type ProcessorOption func(*processorConfig)
+
+type processorConfig struct {
+	logger Printer
+}
+
+func WithDebugger(logger Printer) ProcessorOption {
+	return func(cfg *processorConfig) {
+		cfg.logger = logger
+	}
+}
+
 // Process calls each Processor in the ProcessingPipeline with a ProcesingContext.
 func (pipe ProcessingPipeline) Process(
 	ctx context.Context,
 	stack Stack,
 	imageEncoder image.Encoder,
 	storage media.Storage,
+	opts ...ProcessorOption,
 ) (Stack, error) {
-	pctx := newProcessorContext(ctx, stack, imageEncoder, storage)
+	var cfg processorConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	pctx := newProcessorContext(ctx, cfg, stack, imageEncoder, storage)
+
 	for i, proc := range pipe {
 		if err := proc.Process(pctx); err != nil {
 			return pctx.stack, fmt.Errorf("processor #%d failed: %w", i+1, err)
 		}
 	}
+
 	return pctx.stack, nil
 }
 
@@ -129,7 +158,11 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 	}
 
 	resizer := (image.Resizer)(r)
+
+	ctx.cfg.logf("[Resizer] Resize image. (StackID=%v Sizes=%v)", s.ID, resizer)
+	start := time.Now()
 	resized := resizer.Resize(original)
+	ctx.cfg.logf("[Resizer] Resize done. (StackID=%v Duration=%v)", s.ID, time.Since(start))
 
 	encoded := make(map[string]*bytes.Buffer)
 
@@ -147,10 +180,14 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 		path := r.path(org.Path, size, format)
 
 		img := media.NewImage(0, 0, org.Name, org.Disk, path, 0)
+
+		ctx.cfg.logf("[Resizer] Upload resized image. (StackID=%v Size=%v)", s.ID, size)
+		start := time.Now()
 		img, err := img.Upload(ctx, buf, storage)
 		if err != nil {
 			return fmt.Errorf("upload %q (%s): %w", path, org.Disk, err)
 		}
+		ctx.cfg.logf("[Resizer] Upload done. (StackID=%v Duration=%v)", s.ID, time.Since(start))
 
 		resizedImages = append(resizedImages, Image{
 			Image: img,
@@ -209,11 +246,14 @@ func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 				return
 			}
 
+			ctx.cfg.logf("[PNGCompressor]: Compress image.")
+			start := time.Now()
 			compressed, err := c.Compress(stdimg)
 			if err != nil {
 				fail(fmt.Errorf("compress image with compression level %d: %w", c.CompressionLevel(), err))
 				return
 			}
+			ctx.cfg.logf("[PNGCompressor]: Image compressed. (Duration=%v)", time.Since(start))
 
 			var buf bytes.Buffer
 			if err := ctx.Encode(&buf, compressed, format); err != nil {
@@ -221,11 +261,14 @@ func (comp PNGCompressor) Process(ctx *ProcessorContext) error {
 				return
 			}
 
+			ctx.cfg.logf("[PNGCompressor]: Replace storage image. (Disk=%v Path=%v)", img.Disk, img.Path)
+			start = time.Now()
 			replaced, err := img.Replace(ctx, &buf, storage)
 			if err != nil {
 				fail(fmt.Errorf("replace image %q (%s): %w", img.Path, img.Disk, err))
 				return
 			}
+			ctx.cfg.logf("[PNGCompressor]: Storage image replaced. (Disk=%v Path=%v Duration=%v)", img.Disk, img.Path, time.Since(start))
 
 			stack.Images[i].Image = replaced
 		}(img, i)
@@ -269,16 +312,25 @@ func NewPostProcessor(enc image.Encoder, storage media.Storage, galleries Reposi
 }
 
 // Process calls pipe.Process with the provided Stack.
-func (svc *PostProcessor) Process(ctx context.Context, stack Stack, pipe ProcessingPipeline) (Stack, error) {
-	return pipe.Process(ctx, stack, svc.encoder, svc.storage)
+func (svc *PostProcessor) Process(ctx context.Context, stack Stack, pipe ProcessingPipeline, opts ...ProcessorOption) (Stack, error) {
+	return pipe.Process(ctx, stack, svc.encoder, svc.storage, opts...)
 }
 
 // PostProcessorOption is an option for PostProcessor.Run.
 type PostProcessorOption func(*postProcessorConfig)
 
 type postProcessorConfig struct {
+	logger      Printer
 	workers     int
 	onProcessed []func(Stack, *Gallery)
+}
+
+// ProcessorLogger returns a PostProcessorOption that provides the post-processor
+// with a logger.
+func ProcessorLogger(logger Printer) PostProcessorOption {
+	return func(cfg *postProcessorConfig) {
+		cfg.logger = logger
+	}
 }
 
 // ProcessorWorkers returns a PostProcessorOption that configures the worker
@@ -306,6 +358,8 @@ func (svc *PostProcessor) Run(
 	opts ...PostProcessorOption,
 ) (<-chan error, error) {
 	cfg := newProcessorConfig(opts...)
+
+	cfg.log("Logging enabled.")
 
 	events, errs, err := bus.Subscribe(ctx, ImageUploaded, ImageReplaced)
 	if err != nil {
@@ -342,12 +396,17 @@ func (svc *PostProcessor) work(
 		}
 	}
 
+	cfg.logf("Processing using %d worker(s).", cfg.workers)
+
 	var wg sync.WaitGroup
 	wg.Add(cfg.workers)
+
 	for i := 0; i < cfg.workers; i++ {
 		go func() {
 			defer wg.Done()
 			for job := range queue {
+				cfg.logf("Received processing job. (GalleryID=%v StackID=%v)", job.galleryID, job.stackID)
+
 				g, err := svc.galleries.Fetch(ctx, job.galleryID)
 				if err != nil {
 					fail(fmt.Errorf("fetch Gallery %q: %w", job.galleryID, err))
@@ -360,11 +419,16 @@ func (svc *PostProcessor) work(
 					continue
 				}
 
-				processed, err := pipe.Process(ctx, stack, svc.encoder, svc.storage)
+				cfg.logf("Processing stack. (ID=%v)", stack.ID)
+				start := time.Now()
+
+				processed, err := svc.Process(ctx, stack, pipe, WithDebugger(cfg.logger))
 				if err != nil {
 					fail(fmt.Errorf("ProcessingPipeline failed: %w", err))
 					continue
 				}
+
+				cfg.logf("Processing done. (StackID=%v Duration=%v)", stack.ID, time.Since(start))
 
 				// Re-fetch Gallery to avoid concurrency errors if the processing took long.
 				g, err = svc.galleries.Fetch(ctx, g.ID)
@@ -443,5 +507,29 @@ func enqueue(ctx context.Context, queue chan<- processorJob, galleryID, stackID 
 		galleryID: galleryID,
 		stackID:   stackID,
 	}:
+	}
+}
+
+func (cfg postProcessorConfig) log(v ...interface{}) {
+	if cfg.logger != nil {
+		cfg.logger.Print(v...)
+	}
+}
+
+func (cfg postProcessorConfig) logf(format string, v ...interface{}) {
+	if cfg.logger != nil {
+		cfg.logger.Print(fmt.Sprintf(format, v...))
+	}
+}
+
+func (cfg processorConfig) log(v ...interface{}) {
+	if cfg.logger != nil {
+		cfg.logger.Print(v...)
+	}
+}
+
+func (cfg processorConfig) logf(format string, v ...interface{}) {
+	if cfg.logger != nil {
+		cfg.logger.Print(fmt.Sprintf(format, v...))
 	}
 }
