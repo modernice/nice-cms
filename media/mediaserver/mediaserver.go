@@ -225,7 +225,7 @@ func (s *documentServer) updateDocument(w http.ResponseWriter, r *http.Request) 
 	}
 
 	cmd := document.Rename(shelfID, documentID, req.Name)
-	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
@@ -237,7 +237,7 @@ func (s *documentServer) updateDocument(w http.ResponseWriter, r *http.Request) 
 			cmd = document.MakeNonUnique(shelfID, documentID)
 		}
 
-		if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 			api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 			return
 		}
@@ -272,7 +272,7 @@ func (s *documentServer) deleteDocument(w http.ResponseWriter, r *http.Request) 
 	}
 
 	cmd := document.Remove(shelfID, documentID)
-	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to remove document: %v", err))
 		return
 	}
@@ -303,7 +303,7 @@ func (s *documentServer) addTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cmd := document.Tag(shelfID, documentID, req.Tags)
-	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
@@ -338,7 +338,7 @@ func (s *documentServer) removeTags(w http.ResponseWriter, r *http.Request) {
 	tags := strings.Split(chi.URLParam(r, "Tags"), ",")
 
 	cmd := document.Untag(shelfID, documentID, tags)
-	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
@@ -491,7 +491,7 @@ func (s *galleryServer) deleteStack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cmd := gallery.DeleteStack(galleryID, stackID)
-	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
@@ -522,7 +522,7 @@ func (s *galleryServer) tagStack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cmd := gallery.TagStack(galleryID, stackID, req.Tags)
-	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
@@ -557,7 +557,7 @@ func (s *galleryServer) untagStack(w http.ResponseWriter, r *http.Request) {
 	tags := strings.Split(chi.URLParam(r, "Tags"), ",")
 
 	cmd := gallery.UntagStack(galleryID, stackID, tags)
-	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 		api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 		return
 	}
@@ -629,7 +629,7 @@ func (s *galleryServer) updateStack(w http.ResponseWriter, r *http.Request) {
 
 	if req.Name != "" {
 		cmd := gallery.RenameStack(galleryID, stackID, req.Name)
-		if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Synchronous()); err != nil {
+		if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 			api.Error(w, r, http.StatusInternalServerError, api.Friendly(err, "Failed to dispatch %q command: %v", cmd.Name(), err))
 			return
 		}
@@ -665,7 +665,7 @@ func (s *galleryServer) sortGallery(w http.ResponseWriter, r *http.Request) {
 
 	cmd := gallery.Sort(galleryID, req.Sorting)
 
-	if err := s.commands.Dispatch(r.Context(), cmd); err != nil {
+	if err := s.commands.Dispatch(r.Context(), cmd, dispatch.Sync()); err != nil {
 		api.Error(w, r, http.StatusInternalServerError, err)
 		return
 	}

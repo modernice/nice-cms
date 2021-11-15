@@ -45,7 +45,7 @@ func TestCreateCmd(t *testing.T) {
 	}
 	cmd := nav.CreateCmd("foo", items...)
 
-	if err := cbus.Dispatch(ctx, cmd, dispatch.Synchronous()); err != nil {
+	if err := cbus.Dispatch(ctx, cmd, dispatch.Sync()); err != nil {
 		t.Fatalf("dispatch command: %v", err)
 	}
 
@@ -85,7 +85,7 @@ func TestCreateCmd_duplicateName(t *testing.T) {
 	}
 	cmd := nav.CreateCmd("foo", items...)
 
-	if err := cbus.Dispatch(ctx, cmd, dispatch.Synchronous()); err != nil {
+	if err := cbus.Dispatch(ctx, cmd, dispatch.Sync()); err != nil {
 		t.Fatalf("dispatch command: %v", err)
 	}
 
@@ -93,7 +93,7 @@ func TestCreateCmd_duplicateName(t *testing.T) {
 
 	<-time.After(20 * time.Millisecond)
 
-	if err := cbus.Dispatch(ctx, cmd, dispatch.Synchronous()); err == nil || !strings.Contains(err.Error(), "name already in use") {
+	if err := cbus.Dispatch(ctx, cmd, dispatch.Sync()); err == nil || !strings.Contains(err.Error(), "name already in use") {
 		t.Fatalf("Dispatch should fail with an error containing %q; got %q", "name already in use", err)
 	}
 }
