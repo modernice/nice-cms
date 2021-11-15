@@ -235,6 +235,19 @@ export async function untagGalleryStack(
 }
 
 /**
+ * Sorts the given {@link Gallery} by the provided `sorting`.
+ */
+export async function sortGallery(
+  client: AxiosInstance,
+  gallery: Gallery,
+  sorting: string[]
+) {
+  await client.patch(`/galleries/${gallery.id}/sorting`, { sorting })
+  const update = await fetchGallery(client, gallery.id)
+  gallery.stacks = update.stacks
+}
+
+/**
  * Returns the stack with the given stackId from the stacks of the gallery.
  */
 export function findGalleryStack(gallery: Gallery, stackId: string) {
