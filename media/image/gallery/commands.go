@@ -17,6 +17,7 @@ const (
 	UntagStackCommand  = "cms.media.image.gallery.untag_stack"
 	RenameStackCommand = "cms.media.image.gallery.rename_stack"
 	UpdateStackCommand = "cms.media.image.gallery.update_stack"
+	SortCommand        = "cms.media.image.gallery.sort"
 )
 
 type createPayload struct {
@@ -85,6 +86,15 @@ func UpdateStack(galleryID uuid.UUID, stack Stack) command.Command {
 	return command.New(UpdateStackCommand, updateStackPayload{Stack: stack}, command.Aggregate(Aggregate, galleryID))
 }
 
+type sortPayload struct {
+	Sorting []uuid.UUID
+}
+
+// Sort returns the command to sort a gallery.
+func Sort(galleryID uuid.UUID, sorting []uuid.UUID) command.Command {
+	return command.New(SortCommand, sortPayload{Sorting: sorting}, command.Aggregate(Aggregate, galleryID))
+}
+
 // RegisterCommands register the gallery commands into a command registry.
 func RegisterCommands(r command.Registry) {
 	r.Register(CreateCommand, func() command.Payload { return createPayload{} })
@@ -93,6 +103,7 @@ func RegisterCommands(r command.Registry) {
 	r.Register(UntagStackCommand, func() command.Payload { return untagStackPayload{} })
 	r.Register(RenameStackCommand, func() command.Payload { return renameStackPayload{} })
 	r.Register(UpdateStackCommand, func() command.Payload { return updateStackPayload{} })
+	r.Register(SortCommand, func() command.Payload { return sortPayload{} })
 }
 
 // HandleCommands handles commands until ctx is canceled.
@@ -170,6 +181,16 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		})
 	})
 
+	sortErrors := h.MustHandle(ctx, SortCommand, func(ctx command.Context) error {
+		cmd := ctx.Command()
+		load := cmd.Payload().(sortPayload)
+
+		return galleries.Use(ctx, cmd.AggregateID(), func(g *Gallery) error {
+			g.Sort(load.Sorting)
+			return nil
+		})
+	})
+
 	return fanin.ErrorsContext(
 		ctx,
 		createErrors,
@@ -178,5 +199,6 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		untagStackErrors,
 		renameStackErrors,
 		updateStackErrors,
+		sortErrors,
 	)
 }

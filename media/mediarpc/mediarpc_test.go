@@ -10,12 +10,12 @@ import (
 	"github.com/modernice/goes/event"
 	"github.com/modernice/nice-cms/internal/grpctest"
 	"github.com/modernice/nice-cms/internal/imggen"
-	protomedia "github.com/modernice/nice-cms/internal/proto/gen/media/v1"
 	"github.com/modernice/nice-cms/internal/testutil"
 	"github.com/modernice/nice-cms/media"
 	"github.com/modernice/nice-cms/media/document"
 	"github.com/modernice/nice-cms/media/image/gallery"
 	"github.com/modernice/nice-cms/media/mediarpc"
+	protomedia "github.com/modernice/nice-cms/proto/gen/media/v1"
 	"google.golang.org/grpc"
 )
 

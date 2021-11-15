@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 
@@ -399,6 +400,73 @@ func (g *Implementation) updateStack(evt event.Event) {
 	g.replace(data.Stack.ID, data.Stack)
 }
 
+// Sort sorts the stacks by their UUIDs. The provided `sorting` determines the
+// new order of the stacks. Stacks that are present in `sorting` take precedence
+// over all over stacks. It is allowed to pass UUIDs of stacks that don't exist
+// in the gallery. Sort filters these out and returns the UUIDs that are used to
+// actually sort the stacks.
+func (g *Implementation) Sort(sorting []uuid.UUID) []uuid.UUID {
+	found := make([]uuid.UUID, 0, len(sorting))
+
+	for _, id := range sorting {
+		if _, err := g.Stack(id); err == nil {
+			found = append(found, id)
+		}
+	}
+
+	if len(found) > 0 {
+		aggregate.NextEvent(g.gallery, Sorted, SortedData{Sorting: found})
+	}
+
+	return found
+}
+
+func (g *Implementation) sort(evt event.Event) {
+	data := evt.Data().(SortedData)
+
+	indexes := make(map[uuid.UUID]int)
+
+	sort.Slice(g.Stacks, func(i, j int) bool {
+		var iIdx, jIdx = -1, -1
+		iID, jID := g.Stacks[i].ID, g.Stacks[j].ID
+
+		if idx, ok := indexes[g.Stacks[i].ID]; ok {
+			iIdx = idx
+		}
+
+		if idx, ok := indexes[g.Stacks[j].ID]; ok {
+			jIdx = idx
+		}
+
+		if iIdx == -1 || jIdx == -1 {
+			for idx, id := range data.Sorting {
+				if id == iID {
+					iIdx = idx
+					indexes[iID] = idx
+				}
+				if id == jID {
+					jIdx = idx
+					indexes[jID] = idx
+				}
+
+				if iIdx > -1 && jIdx > -1 {
+					break
+				}
+			}
+		}
+
+		if iIdx > -1 && jIdx > -1 {
+			return iIdx < jIdx
+		}
+
+		if iIdx == -1 && jIdx == -1 {
+			return i < j
+		}
+
+		return jIdx == -1
+	})
+}
+
 type snapshot struct {
 	Stacks []Stack `json:"stacks"`
 }
@@ -547,6 +615,8 @@ func EventApplier(impl *Implementation) func(event.Event) {
 			impl.renameStack(evt)
 		case StackUpdated:
 			impl.updateStack(evt)
+		case Sorted:
+			impl.sort(evt)
 		}
 	}
 }

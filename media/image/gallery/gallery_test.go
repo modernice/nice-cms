@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"image/color"
 	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/modernice/goes/test"
 	"github.com/modernice/nice-cms/internal/imggen"
+	"github.com/modernice/nice-cms/internal/slice"
 	"github.com/modernice/nice-cms/media"
 	"github.com/modernice/nice-cms/media/image/gallery"
 	"github.com/modernice/nice-cms/media/mock_media"
@@ -483,6 +486,91 @@ func TestGallery_Update(t *testing.T) {
 	}
 
 	test.Change(t, g, gallery.StackUpdated, test.EventData(gallery.StackUpdatedData{Stack: replacement}))
+}
+
+func TestGallery_Sort(t *testing.T) {
+
+	stacks := gallery.Stacks{
+		{ID: uuid.New()},
+		{ID: uuid.New()},
+		{ID: uuid.New()},
+		{ID: uuid.New()},
+	}
+
+	ids := slice.Map(stacks, func(s gallery.Stack) uuid.UUID { return s.ID }).([]uuid.UUID)
+
+	tests := []struct {
+		sort []uuid.UUID
+		want gallery.Stacks
+	}{
+		{
+			sort: nil,
+			want: stacks,
+		},
+		{
+			sort: ids,
+			want: stacks,
+		},
+		{
+			sort: ids[2:4],
+			want: gallery.Stacks{
+				stacks[2],
+				stacks[3],
+				stacks[0],
+				stacks[1],
+			},
+		},
+		{
+			sort: ids[1:3],
+			want: gallery.Stacks{
+				stacks[1],
+				stacks[2],
+				stacks[0],
+				stacks[3],
+			},
+		},
+		{
+			sort: []uuid.UUID{ids[1], ids[3]},
+			want: gallery.Stacks{
+				stacks[1],
+				stacks[3],
+				stacks[0],
+				stacks[2],
+			},
+		},
+		{
+			sort: []uuid.UUID{ids[3], ids[1]},
+			want: gallery.Stacks{
+				stacks[3],
+				stacks[1],
+				stacks[0],
+				stacks[2],
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			g := gallery.New(uuid.New())
+			g.Create("foo")
+
+			g.Stacks = make(gallery.Stacks, len(stacks))
+			copy(g.Stacks, stacks)
+
+			sorting := g.Sort(tt.sort)
+
+			if !cmp.Equal(tt.want, g.Stacks) {
+				t.Fatalf("Stacks have wrong order.\n\n%s", cmp.Diff(tt.want, g.Stacks))
+			}
+
+			if len(sorting) == 0 {
+				test.NoChange(t, g, gallery.Sorted)
+				return
+			}
+
+			test.Change(t, g, gallery.Sorted, test.EventData(gallery.SortedData{Sorting: sorting}))
+		})
+	}
 }
 
 func expectStorageFileContents(t *testing.T, storage media.Storage, diskName, path string, contents []byte) {

@@ -20,6 +20,7 @@ var (
 	DeleteStack              = route("DELETE", "/galleries/{GalleryID}/stacks/{StackID}")
 	TagStack                 = route("POST", "/galleries/{GalleryID}/stacks/{StackID}/tags")
 	UntagStack               = route("DELETE", "/galleries/{GalleryID}/stacks/{StackID}/tags/{Tags}")
+	SortGallery              = route("PATCH", "/galleries/{GalleryID}/sorting")
 
 	GalleryReadRoutes = [...]Route{
 		LookupGalleryByName,
@@ -34,6 +35,7 @@ var (
 		DeleteStack,
 		TagStack,
 		UntagStack,
+		SortGallery,
 	}
 
 	GalleryRoutes = [...]Route{

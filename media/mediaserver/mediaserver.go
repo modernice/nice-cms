@@ -31,6 +31,7 @@ type GalleryClient interface {
 	UploadImage(_ context.Context, galleryID uuid.UUID, _ io.Reader, name, disk, path string) (gallery.Stack, error)
 	ReplaceImage(_ context.Context, galleryID, stackID uuid.UUID, _ io.Reader) (gallery.Stack, error)
 	FetchGallery(context.Context, uuid.UUID) (gallery.JSONGallery, error)
+	SortGallery(_ context.Context, galleryID uuid.UUID, sorting []uuid.UUID) error
 }
 
 // Server is the media server.
@@ -385,6 +386,7 @@ func (s *galleryServer) init() {
 	s.routes.Install(s, routes.DeleteStack, http.HandlerFunc(s.deleteStack))
 	s.routes.Install(s, routes.TagStack, http.HandlerFunc(s.tagStack))
 	s.routes.Install(s, routes.UntagStack, http.HandlerFunc(s.untagStack))
+	s.routes.Install(s, routes.SortGallery, http.HandlerFunc(s.sortGallery))
 }
 
 func (s *galleryServer) lookupName(w http.ResponseWriter, r *http.Request) {
@@ -645,4 +647,28 @@ func (s *galleryServer) updateStack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.JSON(w, r, http.StatusOK, stack)
+}
+
+func (s *galleryServer) sortGallery(w http.ResponseWriter, r *http.Request) {
+	galleryID, err := api.ExtractUUID(r, "GalleryID")
+	if err != nil {
+		api.Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	var req struct{ Sorting []uuid.UUID }
+
+	if err := api.Decode(r.Body, &req); err != nil {
+		api.Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	cmd := gallery.Sort(galleryID, req.Sorting)
+
+	if err := s.commands.Dispatch(r.Context(), cmd); err != nil {
+		api.Error(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
+	api.NoContent(w, r)
 }

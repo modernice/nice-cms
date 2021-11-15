@@ -8,6 +8,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -28,6 +29,7 @@ type MediaServiceClient interface {
 	UploadImage(ctx context.Context, opts ...grpc.CallOption) (MediaService_UploadImageClient, error)
 	ReplaceImage(ctx context.Context, opts ...grpc.CallOption) (MediaService_ReplaceImageClient, error)
 	FetchGallery(ctx context.Context, in *v1.UUID, opts ...grpc.CallOption) (*Gallery, error)
+	SortGallery(ctx context.Context, in *SortGalleryReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type mediaServiceClient struct {
@@ -219,6 +221,15 @@ func (c *mediaServiceClient) FetchGallery(ctx context.Context, in *v1.UUID, opts
 	return out, nil
 }
 
+func (c *mediaServiceClient) SortGallery(ctx context.Context, in *SortGalleryReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/nicecms.media.v1.MediaService/SortGallery", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MediaServiceServer is the server API for MediaService service.
 // All implementations must embed UnimplementedMediaServiceServer
 // for forward compatibility
@@ -232,6 +243,7 @@ type MediaServiceServer interface {
 	UploadImage(MediaService_UploadImageServer) error
 	ReplaceImage(MediaService_ReplaceImageServer) error
 	FetchGallery(context.Context, *v1.UUID) (*Gallery, error)
+	SortGallery(context.Context, *SortGalleryReq) (*emptypb.Empty, error)
 	mustEmbedUnimplementedMediaServiceServer()
 }
 
@@ -265,6 +277,9 @@ func (UnimplementedMediaServiceServer) ReplaceImage(MediaService_ReplaceImageSer
 }
 func (UnimplementedMediaServiceServer) FetchGallery(context.Context, *v1.UUID) (*Gallery, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchGallery not implemented")
+}
+func (UnimplementedMediaServiceServer) SortGallery(context.Context, *SortGalleryReq) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SortGallery not implemented")
 }
 func (UnimplementedMediaServiceServer) mustEmbedUnimplementedMediaServiceServer() {}
 
@@ -473,6 +488,24 @@ func _MediaService_FetchGallery_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MediaService_SortGallery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SortGalleryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MediaServiceServer).SortGallery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/nicecms.media.v1.MediaService/SortGallery",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MediaServiceServer).SortGallery(ctx, req.(*SortGalleryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MediaService_ServiceDesc is the grpc.ServiceDesc for MediaService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -499,6 +532,10 @@ var MediaService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FetchGallery",
 			Handler:    _MediaService_FetchGallery_Handler,
+		},
+		{
+			MethodName: "SortGallery",
+			Handler:    _MediaService_SortGallery_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

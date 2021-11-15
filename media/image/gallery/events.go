@@ -14,6 +14,7 @@ const (
 	StackUntagged = "cms.media.image.gallery.stack_untagged"
 	StackRenamed  = "cms.media.image.gallery.stack_renamed"
 	StackUpdated  = "cms.media.image.gallery.stack_updated"
+	Sorted        = "cms.media.image.gallery.sorted"
 )
 
 type CreatedData struct {
@@ -52,6 +53,10 @@ type StackUpdatedData struct {
 	Stack Stack
 }
 
+type SortedData struct {
+	Sorting []uuid.UUID
+}
+
 func RegisterEvents(r event.Registry) {
 	r.Register(Created, func() event.Data { return CreatedData{} })
 	r.Register(ImageUploaded, func() event.Data { return ImageUploadedData{} })
@@ -61,4 +66,5 @@ func RegisterEvents(r event.Registry) {
 	r.Register(StackUntagged, func() event.Data { return StackUntaggedData{} })
 	r.Register(StackRenamed, func() event.Data { return StackRenamedData{} })
 	r.Register(StackUpdated, func() event.Data { return StackUpdatedData{} })
+	r.Register(Sorted, func() event.Data { return SortedData{} })
 }
