@@ -31,7 +31,6 @@ type GalleryClient interface {
 	UploadImage(_ context.Context, galleryID uuid.UUID, _ io.Reader, name, disk, path string) (gallery.Stack, error)
 	ReplaceImage(_ context.Context, galleryID, stackID uuid.UUID, _ io.Reader) (gallery.Stack, error)
 	FetchGallery(context.Context, uuid.UUID) (gallery.JSONGallery, error)
-	SortGallery(_ context.Context, galleryID uuid.UUID, sorting []uuid.UUID) error
 }
 
 // Server is the media server.
