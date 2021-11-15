@@ -396,7 +396,7 @@ func (svc *PostProcessor) work(
 		}
 	}
 
-	cfg.logf("Processing using %d worker(s).", cfg.workers)
+	cfg.logf("Post-processor running with %d worker(s).", cfg.workers)
 
 	var wg sync.WaitGroup
 	wg.Add(cfg.workers)
