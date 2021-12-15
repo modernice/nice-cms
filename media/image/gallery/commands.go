@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/modernice/goes/codec"
 	"github.com/modernice/goes/command"
 	"github.com/modernice/goes/helper/fanin"
 	"github.com/modernice/nice-cms/media"
@@ -96,14 +97,14 @@ func Sort(galleryID uuid.UUID, sorting []uuid.UUID) command.Command {
 }
 
 // RegisterCommands register the gallery commands into a command registry.
-func RegisterCommands(r command.Registry) {
-	r.Register(CreateCommand, func() command.Payload { return createPayload{} })
-	r.Register(DeleteStackCommand, func() command.Payload { return deleteStackPayload{} })
-	r.Register(TagStackCommand, func() command.Payload { return tagStackPayload{} })
-	r.Register(UntagStackCommand, func() command.Payload { return untagStackPayload{} })
-	r.Register(RenameStackCommand, func() command.Payload { return renameStackPayload{} })
-	r.Register(UpdateStackCommand, func() command.Payload { return updateStackPayload{} })
-	r.Register(SortCommand, func() command.Payload { return sortPayload{} })
+func RegisterCommands(r *codec.GobRegistry) {
+	r.GobRegister(CreateCommand, func() interface{} { return createPayload{} })
+	r.GobRegister(DeleteStackCommand, func() interface{} { return deleteStackPayload{} })
+	r.GobRegister(TagStackCommand, func() interface{} { return tagStackPayload{} })
+	r.GobRegister(UntagStackCommand, func() interface{} { return untagStackPayload{} })
+	r.GobRegister(RenameStackCommand, func() interface{} { return renameStackPayload{} })
+	r.GobRegister(UpdateStackCommand, func() interface{} { return updateStackPayload{} })
+	r.GobRegister(SortCommand, func() interface{} { return sortPayload{} })
 }
 
 // HandleCommands handles commands until ctx is canceled.

@@ -2,7 +2,7 @@ package document
 
 import (
 	"github.com/google/uuid"
-	"github.com/modernice/goes/event"
+	"github.com/modernice/goes/codec"
 )
 
 // Shelf events
@@ -71,14 +71,14 @@ type DocumentUntaggedData struct {
 }
 
 // RegisterEvents registers Shelf events into an event registry.
-func RegisterEvents(r event.Registry) {
-	r.Register(ShelfCreated, func() event.Data { return ShelfCreatedData{} })
-	r.Register(DocumentAdded, func() event.Data { return DocumentAddedData{} })
-	r.Register(DocumentReplaced, func() event.Data { return DocumentReplacedData{} })
-	r.Register(DocumentRemoved, func() event.Data { return DocumentRemovedData{} })
-	r.Register(DocumentRenamed, func() event.Data { return DocumentRenamedData{} })
-	r.Register(DocumentMadeUnique, func() event.Data { return DocumentMadeUniqueData{} })
-	r.Register(DocumentMadeNonUnique, func() event.Data { return DocumentMadeNonUniqueData{} })
-	r.Register(DocumentTagged, func() event.Data { return DocumentTaggedData{} })
-	r.Register(DocumentUntagged, func() event.Data { return DocumentUntaggedData{} })
+func RegisterEvents(r *codec.GobRegistry) {
+	r.GobRegister(ShelfCreated, func() interface{} { return ShelfCreatedData{} })
+	r.GobRegister(DocumentAdded, func() interface{} { return DocumentAddedData{} })
+	r.GobRegister(DocumentReplaced, func() interface{} { return DocumentReplacedData{} })
+	r.GobRegister(DocumentRemoved, func() interface{} { return DocumentRemovedData{} })
+	r.GobRegister(DocumentRenamed, func() interface{} { return DocumentRenamedData{} })
+	r.GobRegister(DocumentMadeUnique, func() interface{} { return DocumentMadeUniqueData{} })
+	r.GobRegister(DocumentMadeNonUnique, func() interface{} { return DocumentMadeNonUniqueData{} })
+	r.GobRegister(DocumentTagged, func() interface{} { return DocumentTaggedData{} })
+	r.GobRegister(DocumentUntagged, func() interface{} { return DocumentUntaggedData{} })
 }

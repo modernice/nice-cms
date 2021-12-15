@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/modernice/goes/codec"
 	"github.com/modernice/goes/command"
 	"github.com/modernice/goes/helper/fanin"
 	"github.com/modernice/nice-cms/media"
@@ -14,10 +15,10 @@ const (
 	CreateShelfCommand   = "cms.media.document.shelf.create"
 	RemoveCommand        = "cms.media.document.shelf.remove_document"
 	RenameCommand        = "cms.media.document.shelf.rename_document"
-	MakeUniqueCommand    = "cms.media.document.shelf.document_made_unique"
-	MakeNonUniqueCommand = "cms.media.document.shelf.document_made_non_unique"
-	TagCommand           = "cms.media.document.shelf.document_tagged"
-	UntagCommand         = "cms.media.document.shelf.document_untagged"
+	MakeUniqueCommand    = "cms.media.document.shelf.make_document_unique"
+	MakeNonUniqueCommand = "cms.media.document.shelf.make_document_non_unique"
+	TagCommand           = "cms.media.document.shelf.tag_document"
+	UntagCommand         = "cms.media.document.shelf.untag_document"
 )
 
 type createShelfPayload struct{ Name string }
@@ -97,14 +98,14 @@ func Untag(shelfID, documentID uuid.UUID, tags []string) command.Command {
 }
 
 // RegisterCommand registers document commands.
-func RegisterCommands(r command.Registry) {
-	r.Register(CreateShelfCommand, func() command.Payload { return createShelfPayload{} })
-	r.Register(RemoveCommand, func() command.Payload { return removePayload{} })
-	r.Register(RenameCommand, func() command.Payload { return renamePayload{} })
-	r.Register(MakeUniqueCommand, func() command.Payload { return makeUniquePayload{} })
-	r.Register(MakeNonUniqueCommand, func() command.Payload { return makeNonUniquePayload{} })
-	r.Register(TagCommand, func() command.Payload { return tagPayload{} })
-	r.Register(UntagCommand, func() command.Payload { return untagPayload{} })
+func RegisterCommands(r *codec.GobRegistry) {
+	r.GobRegister(CreateShelfCommand, func() interface{} { return createShelfPayload{} })
+	r.GobRegister(RemoveCommand, func() interface{} { return removePayload{} })
+	r.GobRegister(RenameCommand, func() interface{} { return renamePayload{} })
+	r.GobRegister(MakeUniqueCommand, func() interface{} { return makeUniquePayload{} })
+	r.GobRegister(MakeNonUniqueCommand, func() interface{} { return makeNonUniquePayload{} })
+	r.GobRegister(TagCommand, func() interface{} { return tagPayload{} })
+	r.GobRegister(UntagCommand, func() interface{} { return untagPayload{} })
 }
 
 // HandleCommand handles commands until ctx is canceled.

@@ -49,10 +49,10 @@ func RemoveFields(id uuid.UUID, fields ...string) command.Command {
 }
 
 // RegisterCommand registers commands into a registry.
-func RegisterCommands(r command.Registry) {
-	r.Register(CreateCommand, func() command.Payload { return createPayload{} })
-	r.Register(AddFieldsCommand, func() command.Payload { return addFieldsPayload{} })
-	r.Register(RemoveFieldsCommand, func() command.Payload { return removeFieldsPayload{} })
+func RegisterCommands(r *codec.GobRegistry) {
+	r.GobRegister(CreateCommand, func() interface{} { return createPayload{} })
+	r.GobRegister(AddFieldsCommand, func() interface{} { return addFieldsPayload{} })
+	r.GobRegister(RemoveFieldsCommand, func() interface{} { return removeFieldsPayload{} })
 }
 
 // HandleCommands handles commands until ctx is canceled.

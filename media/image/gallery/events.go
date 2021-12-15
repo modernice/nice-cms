@@ -2,7 +2,7 @@ package gallery
 
 import (
 	"github.com/google/uuid"
-	"github.com/modernice/goes/event"
+	"github.com/modernice/goes/codec"
 )
 
 const (
@@ -57,14 +57,14 @@ type SortedData struct {
 	Sorting []uuid.UUID
 }
 
-func RegisterEvents(r event.Registry) {
-	r.Register(Created, func() event.Data { return CreatedData{} })
-	r.Register(ImageUploaded, func() event.Data { return ImageUploadedData{} })
-	r.Register(ImageReplaced, func() event.Data { return ImageReplacedData{} })
-	r.Register(StackDeleted, func() event.Data { return StackDeletedData{} })
-	r.Register(StackTagged, func() event.Data { return StackTaggedData{} })
-	r.Register(StackUntagged, func() event.Data { return StackUntaggedData{} })
-	r.Register(StackRenamed, func() event.Data { return StackRenamedData{} })
-	r.Register(StackUpdated, func() event.Data { return StackUpdatedData{} })
-	r.Register(Sorted, func() event.Data { return SortedData{} })
+func RegisterEvents(r *codec.GobRegistry) {
+	r.GobRegister(Created, func() interface{} { return CreatedData{} })
+	r.GobRegister(ImageUploaded, func() interface{} { return ImageUploadedData{} })
+	r.GobRegister(ImageReplaced, func() interface{} { return ImageReplacedData{} })
+	r.GobRegister(StackDeleted, func() interface{} { return StackDeletedData{} })
+	r.GobRegister(StackTagged, func() interface{} { return StackTaggedData{} })
+	r.GobRegister(StackUntagged, func() interface{} { return StackUntaggedData{} })
+	r.GobRegister(StackRenamed, func() interface{} { return StackRenamedData{} })
+	r.GobRegister(StackUpdated, func() interface{} { return StackUpdatedData{} })
+	r.GobRegister(Sorted, func() interface{} { return SortedData{} })
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/modernice/goes/aggregate/repository"
+	"github.com/modernice/goes/codec"
 	"github.com/modernice/goes/command"
 	"github.com/modernice/goes/command/cmdbus"
 	"github.com/modernice/goes/command/cmdbus/dispatch"
@@ -29,13 +30,13 @@ func TestCreateCmd(t *testing.T) {
 	ebus := chanbus.New()
 	estore := eventstore.WithBus(memstore.New(), ebus)
 	creg := commands.NewRegistry()
-	cbus := cmdbus.New(creg, ereg, ebus)
+	cbus := cmdbus.New(creg, ereg.Registry, ebus)
 
 	repo := nav.GoesRepository(repository.New(estore))
 	lookup, errs := newLookup(t, ctx, ebus, estore)
 	panicOn(errs)
 
-	errs = handleCommands(t, ctx, creg, cbus, repo, lookup)
+	errs = handleCommands(t, ctx, creg.Registry, cbus, repo, lookup)
 	panicOn(errs)
 
 	items := []nav.Item{
@@ -69,13 +70,13 @@ func TestCreateCmd_duplicateName(t *testing.T) {
 	ebus := chanbus.New()
 	estore := eventstore.WithBus(memstore.New(), ebus)
 	creg := commands.NewRegistry()
-	cbus := cmdbus.New(creg, ereg, ebus)
+	cbus := cmdbus.New(creg, ereg.Registry, ebus)
 
 	repo := nav.GoesRepository(repository.New(estore))
 	lookup, errs := newLookup(t, ctx, ebus, estore)
 	panicOn(errs)
 
-	errs = handleCommands(t, ctx, creg, cbus, repo, lookup)
+	errs = handleCommands(t, ctx, creg.Registry, cbus, repo, lookup)
 	go discard.Errors(errs)
 
 	items := []nav.Item{
@@ -107,7 +108,7 @@ func newLookup(t *testing.T, ctx context.Context, bus event.Bus, store event.Sto
 	return l, errs
 }
 
-func handleCommands(t *testing.T, ctx context.Context, creg command.Registry, cbus command.Bus, repo nav.Repository, lookup *nav.Lookup) <-chan error {
+func handleCommands(t *testing.T, ctx context.Context, creg *codec.Registry, cbus command.Bus, repo nav.Repository, lookup *nav.Lookup) <-chan error {
 	return nav.HandleCommands(ctx, cbus, repo, lookup)
 }
 

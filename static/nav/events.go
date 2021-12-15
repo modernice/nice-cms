@@ -1,6 +1,8 @@
 package nav
 
-import "github.com/modernice/goes/event"
+import (
+	"github.com/modernice/goes/codec"
+)
 
 const (
 	// Created means a Nav was created.
@@ -48,9 +50,9 @@ type SortedData struct {
 }
 
 // RegisterEvents registers events into an event registry.
-func RegisterEvents(r event.Registry) {
-	r.Register(Created, func() event.Data { return CreatedData{} })
-	r.Register(ItemsAdded, func() event.Data { return ItemsAddedData{} })
-	r.Register(ItemsRemoved, func() event.Data { return ItemsRemovedData{} })
-	r.Register(Sorted, func() event.Data { return SortedData{} })
+func RegisterEvents(r *codec.GobRegistry) {
+	r.GobRegister(Created, func() interface{} { return CreatedData{} })
+	r.GobRegister(ItemsAdded, func() interface{} { return ItemsAddedData{} })
+	r.GobRegister(ItemsRemoved, func() interface{} { return ItemsRemovedData{} })
+	r.GobRegister(Sorted, func() interface{} { return SortedData{} })
 }

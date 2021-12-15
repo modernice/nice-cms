@@ -41,9 +41,9 @@ type FieldUpdatedData struct {
 }
 
 // RegisterEvents register events into a registry.
-func RegisterEvents(r event.Registry) {
-	r.Register(Created, func() event.Data { return CreatedData{} })
-	r.Register(FieldsAdded, func() event.Data { return FieldsAddedData{} })
-	r.Register(FieldsRemoved, func() event.Data { return FieldsRemovedData{} })
-	r.Register(FieldUpdated, func() event.Data { return FieldUpdatedData{} })
+func RegisterEvents(r *codec.GobRegistry) {
+	r.GobRegister(Created, func() interface{} { return CreatedData{} })
+	r.GobRegister(FieldsAdded, func() interface{} { return FieldsAddedData{} })
+	r.GobRegister(FieldsRemoved, func() interface{} { return FieldsRemovedData{} })
+	r.GobRegister(FieldUpdated, func() interface{} { return FieldUpdatedData{} })
 }

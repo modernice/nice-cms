@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/modernice/goes/codec"
 	"github.com/modernice/goes/command"
 )
 
@@ -28,8 +29,8 @@ func CreateCmd(name string, items ...Item) command.Command {
 }
 
 // RegisterCommands register commands into a registry.
-func RegisterCommands(r command.Registry) {
-	r.Register(CreateCommand, func() command.Payload { return createPayload{} })
+func RegisterCommands(r *codec.GobRegistry) {
+	r.GobRegister(CreateCommand, func() interface{} { return createPayload{} })
 }
 
 // HandleCommands handles navigation commands until ctx is canceled. The
