@@ -9,9 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/modernice/goes/aggregate/repository"
 	"github.com/modernice/goes/event"
-	"github.com/modernice/goes/event/eventbus/chanbus"
+	"github.com/modernice/goes/event/eventbus"
 	"github.com/modernice/goes/event/eventstore"
-	"github.com/modernice/goes/event/eventstore/memstore"
 	"github.com/modernice/nice-cms/static/nav"
 )
 
@@ -19,8 +18,8 @@ func TestReadCache(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	bus := chanbus.New()
-	store := eventstore.WithBus(memstore.New(), bus)
+	bus := eventbus.New()
+	store := eventstore.WithBus(eventstore.New(), bus)
 	aggregates := repository.New(store)
 	repo := newDelayedRepository(nav.GoesRepository(aggregates), 100*time.Millisecond)
 

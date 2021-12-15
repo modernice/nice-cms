@@ -13,9 +13,8 @@ import (
 	"github.com/modernice/goes/command/cmdbus"
 	"github.com/modernice/goes/command/cmdbus/dispatch"
 	"github.com/modernice/goes/event"
-	"github.com/modernice/goes/event/eventbus/chanbus"
+	"github.com/modernice/goes/event/eventbus"
 	"github.com/modernice/goes/event/eventstore"
-	"github.com/modernice/goes/event/eventstore/memstore"
 	"github.com/modernice/nice-cms/internal/commands"
 	"github.com/modernice/nice-cms/internal/discard"
 	"github.com/modernice/nice-cms/internal/events"
@@ -27,8 +26,8 @@ func TestCreateCmd(t *testing.T) {
 	defer cancel()
 
 	ereg := events.NewRegistry()
-	ebus := chanbus.New()
-	estore := eventstore.WithBus(memstore.New(), ebus)
+	ebus := eventbus.New()
+	estore := eventstore.WithBus(eventstore.New(), ebus)
 	creg := commands.NewRegistry()
 	cbus := cmdbus.New(creg, ereg.Registry, ebus)
 
@@ -67,8 +66,8 @@ func TestCreateCmd_duplicateName(t *testing.T) {
 	defer cancel()
 
 	ereg := events.NewRegistry()
-	ebus := chanbus.New()
-	estore := eventstore.WithBus(memstore.New(), ebus)
+	ebus := eventbus.New()
+	estore := eventstore.WithBus(eventstore.New(), ebus)
 	creg := commands.NewRegistry()
 	cbus := cmdbus.New(creg, ereg.Registry, ebus)
 

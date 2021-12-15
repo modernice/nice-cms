@@ -13,9 +13,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/modernice/goes/aggregate/repository"
-	"github.com/modernice/goes/event/eventbus/chanbus"
+	"github.com/modernice/goes/event/eventbus"
 	"github.com/modernice/goes/event/eventstore"
-	"github.com/modernice/goes/event/eventstore/memstore"
 	"github.com/modernice/nice-cms/internal/imggen"
 	"github.com/modernice/nice-cms/media"
 	"github.com/modernice/nice-cms/media/image"
@@ -168,7 +167,7 @@ func TestProcessingPipeline_Process_illegalStackIDUpdate(t *testing.T) {
 func TestPostProcessor_Process(t *testing.T) {
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
 	enc := image.NewEncoder()
-	estore := memstore.New()
+	estore := eventstore.New()
 	aggregates := repository.New(estore)
 	galleries := gallery.GoesRepository(aggregates)
 
@@ -210,8 +209,8 @@ func TestPostProcessor_Process(t *testing.T) {
 func TestPostProcessor_Run(t *testing.T) {
 	enc := image.NewEncoder()
 	storage := media.NewStorage(media.ConfigureDisk(exampleDisk, media.MemoryDisk()))
-	ebus := chanbus.New()
-	estore := eventstore.WithBus(memstore.New(), ebus)
+	ebus := eventbus.New()
+	estore := eventstore.WithBus(eventstore.New(), ebus)
 	aggregates := repository.New(estore)
 	galleries := gallery.GoesRepository(aggregates)
 	svc := gallery.NewPostProcessor(enc, storage, galleries)

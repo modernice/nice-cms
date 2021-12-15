@@ -7,9 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/modernice/goes/aggregate/repository"
-	"github.com/modernice/goes/event/eventbus/chanbus"
+	"github.com/modernice/goes/event/eventbus"
 	"github.com/modernice/goes/event/eventstore"
-	"github.com/modernice/goes/event/eventstore/memstore"
 	"github.com/modernice/nice-cms/static/nav"
 )
 
@@ -17,8 +16,8 @@ func TestLookup(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ebus := chanbus.New()
-	estore := eventstore.WithBus(memstore.New(), ebus)
+	ebus := eventbus.New()
+	estore := eventstore.WithBus(eventstore.New(), ebus)
 	repo := nav.GoesRepository(repository.New(estore))
 
 	lookup := nav.NewLookup()

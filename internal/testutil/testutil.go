@@ -7,9 +7,8 @@ import (
 	"github.com/modernice/goes/command"
 	"github.com/modernice/goes/command/cmdbus"
 	"github.com/modernice/goes/event"
-	"github.com/modernice/goes/event/eventbus/chanbus"
+	"github.com/modernice/goes/event/eventbus"
 	"github.com/modernice/goes/event/eventstore"
-	"github.com/modernice/goes/event/eventstore/memstore"
 	"github.com/modernice/nice-cms/internal/events"
 )
 
@@ -20,8 +19,8 @@ func Goes() (
 	func() aggregate.Repository,
 ) {
 	ereg := events.NewRegistry()
-	ebus := chanbus.New()
-	estore := eventstore.WithBus(memstore.New(), ebus)
+	ebus := eventbus.New()
+	estore := eventstore.WithBus(eventstore.New(), ebus)
 
 	creg := codec.New()
 	cbus := cmdbus.New(creg, ereg.Registry, ebus)
