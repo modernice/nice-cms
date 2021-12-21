@@ -39,14 +39,13 @@ func HandleCommands(ctx context.Context, bus command.Bus, repo Repository, looku
 	h := command.NewHandler(bus)
 
 	errs := h.MustHandle(ctx, CreateCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(createPayload)
+		load := ctx.Payload().(createPayload)
 
 		if _, ok := lookup.Name(load.Name); ok {
 			return errors.New("name already in use")
 		}
 
-		nav, err := CreateWithID(cmd.AggregateID(), load.Name, load.Items...)
+		nav, err := CreateWithID(ctx.AggregateID(), load.Name, load.Items...)
 		if err != nil {
 			return err
 		}

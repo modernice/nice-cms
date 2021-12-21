@@ -63,7 +63,8 @@ func (l *Lookup) ApplyEvent(evt event.Event) {
 
 func (l *Lookup) created(evt event.Event) {
 	data := evt.Data().(CreatedData)
-	l.setID(data.Name, evt.AggregateID())
+	id, _, _ := evt.Aggregate()
+	l.setID(data.Name, id)
 }
 
 func (l *Lookup) setID(name string, id uuid.UUID) {

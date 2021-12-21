@@ -477,11 +477,12 @@ func (svc *PostProcessor) accept(
 	event.ForEvery(
 		ctx,
 		func(evt event.Event) {
+			id, _, _ := evt.Aggregate()
 			switch data := evt.Data().(type) {
 			case ImageUploadedData:
-				enqueue(ctx, queue, evt.AggregateID(), data.Stack.ID)
+				enqueue(ctx, queue, id, data.Stack.ID)
 			case ImageReplacedData:
-				enqueue(ctx, queue, evt.AggregateID(), data.Stack.ID)
+				enqueue(ctx, queue, id, data.Stack.ID)
 			}
 		},
 		fail,

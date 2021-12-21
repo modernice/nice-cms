@@ -113,68 +113,61 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 	h := command.NewHandler(bus)
 
 	createErrors := h.MustHandle(ctx, CreateShelfCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(createShelfPayload)
+		load := ctx.Payload().(createShelfPayload)
 
-		return shelfs.Use(ctx, cmd.AggregateID(), func(s *Shelf) error {
+		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			return s.Create(load.Name)
 		})
 	})
 
 	removeErrors := h.MustHandle(ctx, RemoveCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(removePayload)
+		load := ctx.Payload().(removePayload)
 
-		return shelfs.Use(ctx, cmd.AggregateID(), func(s *Shelf) error {
+		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			return s.Remove(ctx, storage, load.DocumentID)
 		})
 	})
 
 	renameErrors := h.MustHandle(ctx, RenameCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(renamePayload)
+		load := ctx.Payload().(renamePayload)
 
-		return shelfs.Use(ctx, cmd.AggregateID(), func(s *Shelf) error {
+		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.RenameDocument(load.DocumentID, load.Name)
 			return err
 		})
 	})
 
 	makeUniqueErrors := h.MustHandle(ctx, MakeUniqueCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(makeUniquePayload)
+		load := ctx.Payload().(makeUniquePayload)
 
-		return shelfs.Use(ctx, cmd.AggregateID(), func(s *Shelf) error {
+		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.MakeUnique(load.DocumentID, load.UniqueName)
 			return err
 		})
 	})
 
 	makeNonUniqueErrors := h.MustHandle(ctx, MakeNonUniqueCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(makeNonUniquePayload)
+		load := ctx.Payload().(makeNonUniquePayload)
 
-		return shelfs.Use(ctx, cmd.AggregateID(), func(s *Shelf) error {
+		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.MakeNonUnique(load.DocumentID)
 			return err
 		})
 	})
 
 	tagErrors := h.MustHandle(ctx, TagCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(tagPayload)
+		load := ctx.Payload().(tagPayload)
 
-		return shelfs.Use(ctx, cmd.AggregateID(), func(s *Shelf) error {
+		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.Tag(load.DocumentID, load.Tags...)
 			return err
 		})
 	})
 
 	untagErrors := h.MustHandle(ctx, UntagCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(untagPayload)
+		load := ctx.Payload().(untagPayload)
 
-		return shelfs.Use(ctx, cmd.AggregateID(), func(s *Shelf) error {
+		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.Untag(load.DocumentID, load.Tags...)
 			return err
 		})

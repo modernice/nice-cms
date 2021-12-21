@@ -11,8 +11,9 @@ type JSONGallery struct {
 
 // JSON returns the JSONGallery for g.
 func (g *Implementation) JSON() JSONGallery {
+	id, _, _ := g.gallery.Aggregate()
 	return JSONGallery{
-		ID:     g.gallery.AggregateID(),
+		ID:     id,
 		Name:   g.Name,
 		Stacks: g.Stacks,
 	}

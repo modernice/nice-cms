@@ -83,31 +83,36 @@ func (l *Lookup) ApplyEvent(evt event.Event) {
 
 func (l *Lookup) shelfCreated(evt event.Event) {
 	data := evt.Data().(ShelfCreatedData)
-	l.setShelfName(evt.AggregateID(), data.Name)
+	id, _, _ := evt.Aggregate()
+	l.setShelfName(id, data.Name)
 }
 
 func (l *Lookup) documentAdded(evt event.Event) {
 	data := evt.Data().(DocumentAddedData)
 	if data.Document.UniqueName != "" {
-		l.setUniqueName(evt.AggregateID(), data.Document.ID, data.Document.UniqueName)
+		id, _, _ := evt.Aggregate()
+		l.setUniqueName(id, data.Document.ID, data.Document.UniqueName)
 	}
 }
 
 func (l *Lookup) documentRemoved(evt event.Event) {
 	data := evt.Data().(DocumentRemovedData)
 	if data.Document.UniqueName != "" {
-		l.removeUniqueName(evt.AggregateID(), data.Document.ID, data.Document.UniqueName)
+		id, _, _ := evt.Aggregate()
+		l.removeUniqueName(id, data.Document.ID, data.Document.UniqueName)
 	}
 }
 
 func (l *Lookup) documentMadeUnique(evt event.Event) {
 	data := evt.Data().(DocumentMadeUniqueData)
-	l.setUniqueName(evt.AggregateID(), data.DocumentID, data.UniqueName)
+	id, _, _ := evt.Aggregate()
+	l.setUniqueName(id, data.DocumentID, data.UniqueName)
 }
 
 func (l *Lookup) documentMadeNonUnique(evt event.Event) {
 	data := evt.Data().(DocumentMadeNonUniqueData)
-	l.removeUniqueName(evt.AggregateID(), data.DocumentID, data.UniqueName)
+	id, _, _ := evt.Aggregate()
+	l.removeUniqueName(id, data.DocumentID, data.UniqueName)
 }
 
 func (l *Lookup) setUniqueName(shelfID, documentID uuid.UUID, name string) {

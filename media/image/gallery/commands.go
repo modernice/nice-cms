@@ -112,19 +112,17 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 	h := command.NewHandler(bus)
 
 	createErrors := h.MustHandle(ctx, CreateCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(createPayload)
+		load := ctx.Payload().(createPayload)
 
-		return galleries.Use(ctx, cmd.AggregateID(), func(g *Gallery) error {
+		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
 			return g.Create(load.Name)
 		})
 	})
 
 	deleteStackErrors := h.MustHandle(ctx, DeleteStackCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(deleteStackPayload)
+		load := ctx.Payload().(deleteStackPayload)
 
-		return galleries.Use(ctx, cmd.AggregateID(), func(g *Gallery) error {
+		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
 			s, err := g.Stack(load.StackID)
 			if err != nil {
 				return err
@@ -134,10 +132,9 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 	})
 
 	tagStackErrors := h.MustHandle(ctx, TagStackCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(tagStackPayload)
+		load := ctx.Payload().(tagStackPayload)
 
-		return galleries.Use(ctx, cmd.AggregateID(), func(g *Gallery) error {
+		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
 			s, err := g.Stack(load.StackID)
 			if err != nil {
 				return err
@@ -148,10 +145,9 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 	})
 
 	untagStackErrors := h.MustHandle(ctx, UntagStackCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(untagStackPayload)
+		load := ctx.Payload().(untagStackPayload)
 
-		return galleries.Use(ctx, cmd.AggregateID(), func(g *Gallery) error {
+		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
 			s, err := g.Stack(load.StackID)
 			if err != nil {
 				return err
@@ -162,20 +158,18 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 	})
 
 	renameStackErrors := h.MustHandle(ctx, RenameStackCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(renameStackPayload)
+		load := ctx.Payload().(renameStackPayload)
 
-		return galleries.Use(ctx, cmd.AggregateID(), func(g *Gallery) error {
+		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
 			_, err := g.RenameStack(ctx, load.StackID, load.Name)
 			return err
 		})
 	})
 
 	updateStackErrors := h.MustHandle(ctx, UpdateStackCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(updateStackPayload)
+		load := ctx.Payload().(updateStackPayload)
 
-		return galleries.Use(ctx, cmd.AggregateID(), func(g *Gallery) error {
+		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
 			return g.Update(load.Stack.ID, func(Stack) Stack {
 				return load.Stack
 			})
@@ -183,10 +177,9 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 	})
 
 	sortErrors := h.MustHandle(ctx, SortCommand, func(ctx command.Context) error {
-		cmd := ctx.Command()
-		load := cmd.Payload().(sortPayload)
+		load := ctx.Payload().(sortPayload)
 
-		return galleries.Use(ctx, cmd.AggregateID(), func(g *Gallery) error {
+		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
 			g.Sort(load.Sorting)
 			return nil
 		})

@@ -120,7 +120,7 @@ func (c *ReadCache) handle(
 		mux.Lock()
 		defer mux.Unlock()
 
-		id := evt.AggregateID()
+		id, _, _ := evt.Aggregate()
 
 		if debouncer, ok := debouncers[id]; ok {
 			debouncer.Stop()

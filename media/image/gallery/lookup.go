@@ -83,28 +83,33 @@ func (l *Lookup) ApplyEvent(evt event.Event) {
 
 func (l *Lookup) galleryCreated(evt event.Event) {
 	data := evt.Data().(CreatedData)
-	l.setGalleryName(evt.AggregateID(), data.Name)
+	id, _, _ := evt.Aggregate()
+	l.setGalleryName(id, data.Name)
 }
 
 func (l *Lookup) imageUploaded(evt event.Event) {
 	data := evt.Data().(ImageUploadedData)
-	l.setStackName(evt.AggregateID(), data.Stack.ID, data.Stack.Original().Name)
+	id, _, _ := evt.Aggregate()
+	l.setStackName(id, data.Stack.ID, data.Stack.Original().Name)
 }
 
 func (l *Lookup) stackDeleted(evt event.Event) {
 	data := evt.Data().(StackDeletedData)
-	l.removeStackName(evt.AggregateID(), data.Stack.ID, data.Stack.Original().Name)
+	id, _, _ := evt.Aggregate()
+	l.removeStackName(id, data.Stack.ID, data.Stack.Original().Name)
 }
 
 func (l *Lookup) stackRenamed(evt event.Event) {
 	data := evt.Data().(StackRenamedData)
-	l.removeStackName(evt.AggregateID(), data.StackID, data.OldName)
-	l.setStackName(evt.AggregateID(), data.StackID, data.Name)
+	id, _, _ := evt.Aggregate()
+	l.removeStackName(id, data.StackID, data.OldName)
+	l.setStackName(id, data.StackID, data.Name)
 }
 
 func (l *Lookup) stackUpdated(evt event.Event) {
 	data := evt.Data().(StackUpdatedData)
-	l.setStackName(evt.AggregateID(), data.Stack.ID, data.Stack.Original().Name)
+	id, _, _ := evt.Aggregate()
+	l.setStackName(id, data.Stack.ID, data.Stack.Original().Name)
 }
 
 func (l *Lookup) setGalleryName(galleryID uuid.UUID, name string) {
