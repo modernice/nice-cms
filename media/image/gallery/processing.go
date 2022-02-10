@@ -431,19 +431,14 @@ func (svc *PostProcessor) work(
 				cfg.logf("Processing done (StackID=%v Duration=%v)", stack.ID, time.Since(start))
 
 				// Re-fetch Gallery to avoid concurrency errors if the processing took long.
-				g, err = svc.galleries.Fetch(ctx, g.ID)
-				if err != nil {
-					fail(fmt.Errorf("re-fetch Gallery %q: %w", g.ID, err))
-					continue
-				}
-
-				if err := g.Update(processed.ID, func(Stack) Stack { return processed }); err != nil {
-					fail(fmt.Errorf("update Stack %q: %w", processed.ID, err))
-					continue
-				}
-
-				if err := svc.galleries.Save(ctx, g); err != nil {
-					fail(fmt.Errorf("save Gallery %q: %w", g.ID, err))
+				if err := svc.galleries.Use(ctx, g.ID, func(gal *Gallery) error {
+					g = gal
+					if err := g.Update(processed.ID, func(Stack) Stack { return processed }); err != nil {
+						return fmt.Errorf("update stack: %w [id=%v]", err, processed.ID)
+					}
+					return nil
+				}); err != nil {
+					fail(fmt.Errorf("update gallery: %w", err))
 					continue
 				}
 

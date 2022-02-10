@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/modernice/goes/aggregate"
@@ -58,7 +59,7 @@ type Repository interface {
 	// with that Gallery and saves the Gallery into the repository. If the
 	// function returns a non-nil error, the Gallery is not saved and that error
 	// is returned.
-	Use(context.Context, uuid.UUID, func(*Gallery) error) error
+	Use(ctx context.Context, id uuid.UUID, fn func(*Gallery) error) error
 }
 
 // A Gallery is a collection of image stacks. A Stack may contain multiple
@@ -568,17 +569,47 @@ func (r *goesRepository) Delete(ctx context.Context, g *Gallery) error {
 }
 
 func (r *goesRepository) Use(ctx context.Context, id uuid.UUID, fn func(*Gallery) error) error {
-	g, err := r.Fetch(ctx, id)
-	if err != nil {
-		return fmt.Errorf("fetch gallery: %w", err)
+	var tries int
+	var lastError error
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	for {
+		if tries > 0 {
+			timer := time.NewTimer(50 * time.Millisecond)
+
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+
+				if lastError != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+					return lastError
+				}
+
+				return ctx.Err()
+			case <-timer.C:
+				timer.Stop()
+			}
+		}
+		tries++
+
+		g, err := r.Fetch(ctx, id)
+		if err != nil {
+			return fmt.Errorf("fetch gallery: %w", err)
+		}
+
+		if err := fn(g); err != nil {
+			return err
+		}
+
+		if err := r.Save(ctx, g); err != nil {
+			lastError = fmt.Errorf("save gallery: %w", err)
+			continue
+		}
+
+		return nil
 	}
-	if err := fn(g); err != nil {
-		return err
-	}
-	if err := r.Save(ctx, g); err != nil {
-		return fmt.Errorf("save gallery: %w", err)
-	}
-	return nil
 }
 
 func (stacks Stacks) FindByTags(tags ...string) Stacks {
