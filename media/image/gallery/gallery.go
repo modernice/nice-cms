@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"sort"
 	"strings"
 	"sync"
@@ -572,12 +573,13 @@ func (r *goesRepository) Use(ctx context.Context, id uuid.UUID, fn func(*Gallery
 	var tries int
 	var lastError error
 
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	for {
 		if tries > 0 {
-			timer := time.NewTimer(50 * time.Millisecond)
+			ms := time.Duration(rand.Intn(150-50)+50) * time.Millisecond
+			timer := time.NewTimer(ms)
 
 			select {
 			case <-ctx.Done():
