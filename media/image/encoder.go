@@ -128,5 +128,5 @@ func (enc *encoder) get(format string) (FormatEncoder, error) {
 	if fenc, ok := enc.encoders[""]; ok {
 		return fenc, nil
 	}
-	return nil, ErrUnknownFormat
+	return nil, fmt.Errorf("%w: %q", ErrUnknownFormat, format)
 }
