@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/google/uuid"
+	"github.com/modernice/goes/aggregate"
 	"github.com/modernice/nice-cms/media"
 	"github.com/modernice/nice-cms/media/document"
 	"github.com/modernice/nice-cms/media/image/gallery"
@@ -287,10 +288,20 @@ func (s *Server) UploadImage(stream protomedia.MediaService_UploadImageServer) e
 		}
 	}()
 
-	var stack gallery.Stack
-	if err := s.galleries.Use(ctx, ptypes.UUID(meta.GetGalleryId()), func(g *gallery.Gallery) error {
-		stack, err = g.Upload(ctx, s.storage, pr, meta.GetName(), meta.GetDisk(), meta.GetPath())
-		return err
+	g, err := s.galleries.Fetch(ctx, ptypes.UUID(meta.GetGalleryId()))
+	if err != nil {
+		return status.Errorf(codes.NotFound, "Failed to fetch gallery: %w", err)
+	}
+
+	stack, err := g.Upload(ctx, s.storage, pr, meta.GetName(), meta.GetDisk(), meta.GetPath())
+	if err != nil {
+		return status.Errorf(codes.Internal, "Failed to upload image: %w", err)
+	}
+
+	if err := s.galleries.Use(ctx, g.ID, func(gal *gallery.Gallery) error {
+		evt := g.AggregateChanges()[len(g.AggregateChanges())-1]
+		aggregate.NextEvent(gal, evt.Name(), evt.Data())
+		return nil
 	}); err != nil {
 		return err
 	}
