@@ -174,10 +174,14 @@ func (img Image) WithoutTag(tags ...string) Image {
 // Upload uploads the image to storage and returns the Image with updated
 // Filesize, Width and Height.
 func (img Image) Upload(ctx context.Context, r io.Reader, storage Storage) (Image, error) {
-	var buf bytes.Buffer
-	r = io.TeeReader(r, &buf)
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return img, fmt.Errorf("read image: %w", err)
+	}
 
-	cfg, _, err := image.DecodeConfig(r)
+	br := bytes.NewReader(b)
+
+	cfg, _, err := image.DecodeConfig(br)
 	if err != nil {
 		return img, fmt.Errorf("decode image: %w", err)
 	}
@@ -185,7 +189,11 @@ func (img Image) Upload(ctx context.Context, r io.Reader, storage Storage) (Imag
 	img.Width = cfg.Width
 	img.Height = cfg.Height
 
-	f, err := img.File.Upload(ctx, &buf, storage)
+	if _, err := br.Seek(0, io.SeekStart); err != nil {
+		return img, fmt.Errorf("reset buffer offset: %w", err)
+	}
+
+	f, err := img.File.Upload(ctx, br, storage)
 	if err != nil {
 		return img, err
 	}
