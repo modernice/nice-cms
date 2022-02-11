@@ -177,19 +177,19 @@ func (img Image) Upload(ctx context.Context, r io.Reader, storage Storage) (Imag
 	var buf bytes.Buffer
 	r = io.TeeReader(r, &buf)
 
-	f, err := img.File.Upload(ctx, r, storage)
-	if err != nil {
-		return img, err
-	}
-	img.File = f
-
-	stdimg, _, err := image.Decode(&buf)
+	cfg, _, err := image.DecodeConfig(r)
 	if err != nil {
 		return img, fmt.Errorf("decode image: %w", err)
 	}
 
-	img.Width = stdimg.Bounds().Dx()
-	img.Height = stdimg.Bounds().Dy()
+	img.Width = cfg.Width
+	img.Height = cfg.Height
+
+	f, err := img.File.Upload(ctx, &buf, storage)
+	if err != nil {
+		return img, err
+	}
+	img.File = f
 
 	return img, nil
 }
