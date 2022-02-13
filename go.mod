@@ -10,7 +10,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.2.0
-	github.com/modernice/goes v0.0.0-20211221165942-7298f2fc4326
+	github.com/modernice/goes v0.0.0-20220211190705-9fa1f2b83771
 	github.com/radical-app/money v1.1.1
 	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.1

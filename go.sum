@@ -255,6 +255,8 @@ github.com/mitchellh/mapstructure v1.4.3 h1:OVowDSCllw/YjdLkam3/sm7wEtOy59d8ndGg
 github.com/mitchellh/mapstructure v1.4.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/modernice/goes v0.0.0-20211221165942-7298f2fc4326 h1:mbKBEoWSKhc6Klf0PQBkK2pwtneCS0dxq7wOHr6ys1Y=
 github.com/modernice/goes v0.0.0-20211221165942-7298f2fc4326/go.mod h1:B2C+wL23tHF6rKuizB9DNz+YDEFI+9mCJzOj+9339oU=
+github.com/modernice/goes v0.0.0-20220211190705-9fa1f2b83771 h1:/88fj1gz9e/e3IBseuV8xprnVgbCC0dOBv2SGdL+5xc=
+github.com/modernice/goes v0.0.0-20220211190705-9fa1f2b83771/go.mod h1:B2C+wL23tHF6rKuizB9DNz+YDEFI+9mCJzOj+9339oU=
 github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
 github.com/nats-io/jwt v0.3.2/go.mod h1:/euKqTS1ZD+zzjYrY7pseZrTtWQSjujC7xjPc8wL6eU=
 github.com/nats-io/jwt v1.1.0/go.mod h1:n3cvmLfBfnpV4JJRN7lRYCyZnw48ksGsbThGXEk4w9M=
