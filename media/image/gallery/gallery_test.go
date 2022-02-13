@@ -66,7 +66,7 @@ func TestGallery_Create_emptyName(t *testing.T) {
 		t.Fatalf("Name should be %q; is %q", "", g.Implementation.Name)
 	}
 
-	test.NoChange(t, g, gallery.Created)
+	test.NoChange[any](t, g, gallery.Created)
 }
 
 func TestCreate_alreadyCreated(t *testing.T) {
@@ -88,7 +88,7 @@ func TestGallery_Upload_notCreated(t *testing.T) {
 		t.Fatalf("Upload should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrNotCreated, err)
 	}
 
-	test.NoChange(t, g, gallery.ImageUploaded)
+	test.NoChange[any](t, g, gallery.ImageUploaded)
 }
 
 func TestGallery_Upload(t *testing.T) {
@@ -206,7 +206,7 @@ func TestGallery_Delete_notCreated(t *testing.T) {
 		t.Fatalf("Delete should fail with %q if the Gallery hasn't been created yet; got %q", gallery.ErrNotCreated, err)
 	}
 
-	test.NoChange(t, g, gallery.StackDeleted)
+	test.NoChange[any](t, g, gallery.StackDeleted)
 }
 
 func TestGallery_Delete(t *testing.T) {
@@ -564,7 +564,7 @@ func TestGallery_Sort(t *testing.T) {
 			}
 
 			if len(sorting) == 0 {
-				test.NoChange(t, g, gallery.Sorted)
+				test.NoChange[any](t, g, gallery.Sorted)
 				return
 			}
 

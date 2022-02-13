@@ -51,8 +51,8 @@ type SortedData struct {
 
 // RegisterEvents registers events into an event registry.
 func RegisterEvents(r *codec.GobRegistry) {
-	r.GobRegister(Created, func() interface{} { return CreatedData{} })
-	r.GobRegister(ItemsAdded, func() interface{} { return ItemsAddedData{} })
-	r.GobRegister(ItemsRemoved, func() interface{} { return ItemsRemovedData{} })
-	r.GobRegister(Sorted, func() interface{} { return SortedData{} })
+	r.GobRegister(Created, func() any { return CreatedData{} })
+	r.GobRegister(ItemsAdded, func() any { return ItemsAddedData{} })
+	r.GobRegister(ItemsRemoved, func() any { return ItemsRemovedData{} })
+	r.GobRegister(Sorted, func() any { return SortedData{} })
 }

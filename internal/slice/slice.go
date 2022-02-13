@@ -19,7 +19,7 @@ import (
 //	numbers := []int{1, 2, 4, 8}
 //	doubled := Map(numbers, func(num int) int { return num*2 }).([]int)
 //	// doubled == []int{2, 4, 8, 16}
-func Map(slice interface{}, fn interface{}) interface{} {
+func Map(slice any, fn any) any {
 	sliceType := reflect.TypeOf(slice)
 	fnType := reflect.TypeOf(fn)
 

@@ -21,25 +21,23 @@ type createPayload struct {
 }
 
 // CreateCmd returns the command for creating a Nav.
-func CreateCmd(name string, items ...Item) command.Command {
+func CreateCmd(name string, items ...Item) command.Cmd[createPayload] {
 	return command.New(CreateCommand, createPayload{
 		Name:  name,
 		Items: items,
-	}, command.Aggregate(Aggregate, uuid.New()))
+	}, command.Aggregate[createPayload](Aggregate, uuid.New()))
 }
 
 // RegisterCommands register commands into a registry.
 func RegisterCommands(r *codec.GobRegistry) {
-	r.GobRegister(CreateCommand, func() interface{} { return createPayload{} })
+	codec.GobRegister[createPayload](r, CreateCommand)
 }
 
 // HandleCommands handles navigation commands until ctx is canceled. The
 // returned error channel is also closed when ctx is canceled.
 func HandleCommands(ctx context.Context, bus command.Bus, repo Repository, lookup *Lookup) <-chan error {
-	h := command.NewHandler(bus)
-
-	errs := h.MustHandle(ctx, CreateCommand, func(ctx command.Context) error {
-		load := ctx.Payload().(createPayload)
+	errs := command.MustHandle(ctx, bus, CreateCommand, func(ctx command.ContextOf[createPayload]) error {
+		load := ctx.Payload()
 
 		if _, ok := lookup.Name(load.Name); ok {
 			return errors.New("name already in use")

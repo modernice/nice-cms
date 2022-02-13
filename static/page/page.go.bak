@@ -171,7 +171,7 @@ func (p *Page) removeField(name string) {
 	}
 }
 
-func (p *Page) UpdateField(fieldName string, value interface{}, locales ...string) error {
+func (p *Page) UpdateField(fieldName string, value any, locales ...string) error {
 	if _, err := p.Field(fieldName); err != nil {
 		return err
 	}

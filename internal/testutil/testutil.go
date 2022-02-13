@@ -23,7 +23,7 @@ func Goes() (
 	estore := eventstore.WithBus(eventstore.New(), ebus)
 
 	creg := codec.New()
-	cbus := cmdbus.New(creg, ereg.Registry, ebus)
+	cbus := cmdbus.New(ereg.Registry, ebus)
 
 	repo := repository.New(estore)
 

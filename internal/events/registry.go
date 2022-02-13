@@ -2,6 +2,7 @@ package events
 
 import (
 	"github.com/modernice/goes/codec"
+	"github.com/modernice/goes/command/cmdbus"
 	"github.com/modernice/nice-cms/media/document"
 	"github.com/modernice/nice-cms/media/image/gallery"
 	"github.com/modernice/nice-cms/static/nav"
@@ -19,4 +20,5 @@ func Register(r *codec.GobRegistry) {
 	nav.RegisterEvents(r)
 	document.RegisterEvents(r)
 	gallery.RegisterEvents(r)
+	cmdbus.RegisterEvents(r.Registry)
 }

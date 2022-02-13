@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/modernice/goes/event"
+	"github.com/modernice/goes/helper/streams"
 	"github.com/modernice/nice-cms/internal/concurrent"
 	"github.com/modernice/nice-cms/media"
 	"github.com/modernice/nice-cms/media/image"
@@ -33,7 +34,7 @@ type ProcessorContext struct {
 
 // Printer is the interface for a logger.
 type Printer interface {
-	Print(v ...interface{})
+	Print(v ...any)
 }
 
 func newProcessorContext(
@@ -468,7 +469,7 @@ func (svc *PostProcessor) accept(
 		}
 	}
 
-	event.ForEvery(
+	streams.ForEach(
 		ctx,
 		func(evt event.Event) {
 			id, _, _ := evt.Aggregate()
@@ -505,25 +506,25 @@ func enqueue(ctx context.Context, queue chan<- processorJob, galleryID, stackID 
 	}
 }
 
-func (cfg postProcessorConfig) log(v ...interface{}) {
+func (cfg postProcessorConfig) log(v ...any) {
 	if cfg.logger != nil {
 		cfg.logger.Print(v...)
 	}
 }
 
-func (cfg postProcessorConfig) logf(format string, v ...interface{}) {
+func (cfg postProcessorConfig) logf(format string, v ...any) {
 	if cfg.logger != nil {
 		cfg.logger.Print(fmt.Sprintf(format, v...))
 	}
 }
 
-func (cfg processorConfig) log(v ...interface{}) {
+func (cfg processorConfig) log(v ...any) {
 	if cfg.logger != nil {
 		cfg.logger.Print(v...)
 	}
 }
 
-func (cfg processorConfig) logf(format string, v ...interface{}) {
+func (cfg processorConfig) logf(format string, v ...any) {
 	if cfg.logger != nil {
 		cfg.logger.Print(fmt.Sprintf(format, v...))
 	}

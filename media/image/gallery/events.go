@@ -58,13 +58,13 @@ type SortedData struct {
 }
 
 func RegisterEvents(r *codec.GobRegistry) {
-	r.GobRegister(Created, func() interface{} { return CreatedData{} })
-	r.GobRegister(ImageUploaded, func() interface{} { return ImageUploadedData{} })
-	r.GobRegister(ImageReplaced, func() interface{} { return ImageReplacedData{} })
-	r.GobRegister(StackDeleted, func() interface{} { return StackDeletedData{} })
-	r.GobRegister(StackTagged, func() interface{} { return StackTaggedData{} })
-	r.GobRegister(StackUntagged, func() interface{} { return StackUntaggedData{} })
-	r.GobRegister(StackRenamed, func() interface{} { return StackRenamedData{} })
-	r.GobRegister(StackUpdated, func() interface{} { return StackUpdatedData{} })
-	r.GobRegister(Sorted, func() interface{} { return SortedData{} })
+	r.GobRegister(Created, func() any { return CreatedData{} })
+	r.GobRegister(ImageUploaded, func() any { return ImageUploadedData{} })
+	r.GobRegister(ImageReplaced, func() any { return ImageReplacedData{} })
+	r.GobRegister(StackDeleted, func() any { return StackDeletedData{} })
+	r.GobRegister(StackTagged, func() any { return StackTaggedData{} })
+	r.GobRegister(StackUntagged, func() any { return StackUntaggedData{} })
+	r.GobRegister(StackRenamed, func() any { return StackRenamedData{} })
+	r.GobRegister(StackUpdated, func() any { return StackUpdatedData{} })
+	r.GobRegister(Sorted, func() any { return SortedData{} })
 }

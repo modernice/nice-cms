@@ -45,7 +45,7 @@ func (m *MockRepository) Delete(arg0 context.Context, arg1 *document.Shelf) erro
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockRepositoryMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository)(nil).Delete), arg0, arg1)
 }
@@ -60,7 +60,7 @@ func (m *MockRepository) Fetch(arg0 context.Context, arg1 uuid.UUID) (*document.
 }
 
 // Fetch indicates an expected call of Fetch.
-func (mr *MockRepositoryMockRecorder) Fetch(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Fetch(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Fetch", reflect.TypeOf((*MockRepository)(nil).Fetch), arg0, arg1)
 }
@@ -74,7 +74,7 @@ func (m *MockRepository) Save(arg0 context.Context, arg1 *document.Shelf) error 
 }
 
 // Save indicates an expected call of Save.
-func (mr *MockRepositoryMockRecorder) Save(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Save(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), arg0, arg1)
 }
@@ -88,7 +88,7 @@ func (m *MockRepository) Use(arg0 context.Context, arg1 uuid.UUID, arg2 func(*do
 }
 
 // Use indicates an expected call of Use.
-func (mr *MockRepositoryMockRecorder) Use(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Use(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Use", reflect.TypeOf((*MockRepository)(nil).Use), arg0, arg1, arg2)
 }

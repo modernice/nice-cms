@@ -5,11 +5,13 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
+	"github.com/modernice/goes/aggregate"
 	"github.com/modernice/nice-cms/static/nav"
 )
 
-func TestPage_MarshalJSON(t *testing.T) {
+func TestNav_MarshalJSON(t *testing.T) {
 	n := nav.New(uuid.New())
 
 	b, err := json.Marshal(n)
@@ -22,7 +24,7 @@ func TestPage_MarshalJSON(t *testing.T) {
 		t.Fatalf("json.Unmarshal failed with %q", err)
 	}
 
-	if !cmp.Equal(n, &unmarshaled) {
+	if !cmp.Equal(n, &unmarshaled, cmpopts.IgnoreUnexported(aggregate.Base{})) {
 		t.Fatalf("invalid unmarshal.\n\n%s", cmp.Diff(n, &unmarshaled))
 	}
 }

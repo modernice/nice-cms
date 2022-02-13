@@ -50,9 +50,9 @@ func RemoveFields(id uuid.UUID, fields ...string) command.Command {
 
 // RegisterCommand registers commands into a registry.
 func RegisterCommands(r *codec.GobRegistry) {
-	r.GobRegister(CreateCommand, func() interface{} { return createPayload{} })
-	r.GobRegister(AddFieldsCommand, func() interface{} { return addFieldsPayload{} })
-	r.GobRegister(RemoveFieldsCommand, func() interface{} { return removeFieldsPayload{} })
+	r.GobRegister(CreateCommand, func() any { return createPayload{} })
+	r.GobRegister(AddFieldsCommand, func() any { return addFieldsPayload{} })
+	r.GobRegister(RemoveFieldsCommand, func() any { return removeFieldsPayload{} })
 }
 
 // HandleCommands handles commands until ctx is canceled.
@@ -86,5 +86,5 @@ func HandleCommands(ctx context.Context, bus command.Bus, pages Repository) <-ch
 		})
 	})
 
-	return fanin.ErrorsContext(ctx, createErrors, addFieldsErrors, removeFieldsErrors)
+	return streams.FanInContext(ctx, createErrors, addFieldsErrors, removeFieldsErrors)
 }

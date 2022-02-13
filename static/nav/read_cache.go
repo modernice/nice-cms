@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/modernice/goes/event"
+	"github.com/modernice/goes/helper/streams"
 )
 
 // ReadCache is a read-cache for Navs.
@@ -116,7 +117,7 @@ func (c *ReadCache) handle(
 		debouncers = nil
 	}()
 
-	event.ForEvery(ctx, func(evt event.Event) {
+	streams.ForEach(ctx, func(evt event.Event) {
 		mux.Lock()
 		defer mux.Unlock()
 

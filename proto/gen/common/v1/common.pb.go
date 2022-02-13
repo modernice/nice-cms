@@ -203,7 +203,7 @@ func file_common_proto_rawDescGZIP() []byte {
 }
 
 var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_common_proto_goTypes = []interface{}{
+var file_common_proto_goTypes = []any{
 	(*UUID)(nil),       // 0: nicecms.common.v1.UUID
 	(*NameLookup)(nil), // 1: nicecms.common.v1.NameLookup
 	(*LookupResp)(nil), // 2: nicecms.common.v1.LookupResp
@@ -223,7 +223,7 @@ func file_common_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_common_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_common_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*UUID); i {
 			case 0:
 				return &v.state
@@ -235,7 +235,7 @@ func file_common_proto_init() {
 				return nil
 			}
 		}
-		file_common_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_common_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*NameLookup); i {
 			case 0:
 				return &v.state
@@ -247,7 +247,7 @@ func file_common_proto_init() {
 				return nil
 			}
 		}
-		file_common_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_common_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*LookupResp); i {
 			case 0:
 				return &v.state

@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
+	"github.com/modernice/goes/aggregate"
 	"github.com/modernice/goes/aggregate/repository"
 	"github.com/modernice/goes/event"
 	"github.com/modernice/goes/event/eventbus"
@@ -52,7 +54,7 @@ func TestReadCache(t *testing.T) {
 		t.Fatalf("first fetch should take at least 100ms; took %v", dur)
 	}
 
-	if !cmp.Equal(fetched, n) {
+	if !cmp.Equal(fetched, n, cmpopts.IgnoreUnexported(aggregate.Base{})) {
 		t.Fatalf("fetched Nav differs from original:\n\n%s", cmp.Diff(n, fetched))
 	}
 
@@ -70,7 +72,7 @@ func TestReadCache(t *testing.T) {
 	// must do this because gob decodes empty slices as nil...
 	fetched.Base.Changes = make([]event.Event, 0)
 
-	if !cmp.Equal(fetched, n) {
+	if !cmp.Equal(fetched, n, cmpopts.IgnoreUnexported(aggregate.Base{})) {
 		t.Fatalf("fetched Nav differs from original:\n\n%s", cmp.Diff(n, fetched))
 	}
 }

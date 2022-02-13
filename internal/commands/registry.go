@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/modernice/goes/codec"
 	"github.com/modernice/nice-cms/media/document"
+	"github.com/modernice/nice-cms/media/image/gallery"
 	"github.com/modernice/nice-cms/static/nav"
 )
 
@@ -17,4 +18,5 @@ func NewRegistry() *codec.GobRegistry {
 func Register(r *codec.GobRegistry) {
 	nav.RegisterCommands(r)
 	document.RegisterCommands(r)
+	gallery.RegisterCommands(r)
 }

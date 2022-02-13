@@ -294,7 +294,7 @@ func RegisterMediaServiceServer(s grpc.ServiceRegistrar, srv MediaServiceServer)
 	s.RegisterService(&MediaService_ServiceDesc, srv)
 }
 
-func _MediaService_LookupShelfByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MediaService_LookupShelfByName_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(v1.NameLookup)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -306,13 +306,13 @@ func _MediaService_LookupShelfByName_Handler(srv interface{}, ctx context.Contex
 		Server:     srv,
 		FullMethod: "/nicecms.media.v1.MediaService/LookupShelfByName",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(MediaServiceServer).LookupShelfByName(ctx, req.(*v1.NameLookup))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MediaService_UploadDocument_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _MediaService_UploadDocument_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(MediaServiceServer).UploadDocument(&mediaServiceUploadDocumentServer{stream})
 }
 
@@ -338,7 +338,7 @@ func (x *mediaServiceUploadDocumentServer) Recv() (*UploadDocumentReq, error) {
 	return m, nil
 }
 
-func _MediaService_ReplaceDocument_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _MediaService_ReplaceDocument_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(MediaServiceServer).ReplaceDocument(&mediaServiceReplaceDocumentServer{stream})
 }
 
@@ -364,7 +364,7 @@ func (x *mediaServiceReplaceDocumentServer) Recv() (*ReplaceDocumentReq, error) 
 	return m, nil
 }
 
-func _MediaService_FetchShelf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MediaService_FetchShelf_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(v1.UUID)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -376,13 +376,13 @@ func _MediaService_FetchShelf_Handler(srv interface{}, ctx context.Context, dec 
 		Server:     srv,
 		FullMethod: "/nicecms.media.v1.MediaService/FetchShelf",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(MediaServiceServer).FetchShelf(ctx, req.(*v1.UUID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MediaService_LookupGalleryByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MediaService_LookupGalleryByName_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(v1.NameLookup)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -394,13 +394,13 @@ func _MediaService_LookupGalleryByName_Handler(srv interface{}, ctx context.Cont
 		Server:     srv,
 		FullMethod: "/nicecms.media.v1.MediaService/LookupGalleryByName",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(MediaServiceServer).LookupGalleryByName(ctx, req.(*v1.NameLookup))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MediaService_LookupGalleryStackByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MediaService_LookupGalleryStackByName_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(LookupGalleryStackByNameReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -412,13 +412,13 @@ func _MediaService_LookupGalleryStackByName_Handler(srv interface{}, ctx context
 		Server:     srv,
 		FullMethod: "/nicecms.media.v1.MediaService/LookupGalleryStackByName",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(MediaServiceServer).LookupGalleryStackByName(ctx, req.(*LookupGalleryStackByNameReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MediaService_UploadImage_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _MediaService_UploadImage_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(MediaServiceServer).UploadImage(&mediaServiceUploadImageServer{stream})
 }
 
@@ -444,7 +444,7 @@ func (x *mediaServiceUploadImageServer) Recv() (*UploadImageReq, error) {
 	return m, nil
 }
 
-func _MediaService_ReplaceImage_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _MediaService_ReplaceImage_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(MediaServiceServer).ReplaceImage(&mediaServiceReplaceImageServer{stream})
 }
 
@@ -470,7 +470,7 @@ func (x *mediaServiceReplaceImageServer) Recv() (*ReplaceImageReq, error) {
 	return m, nil
 }
 
-func _MediaService_FetchGallery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MediaService_FetchGallery_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(v1.UUID)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -482,13 +482,13 @@ func _MediaService_FetchGallery_Handler(srv interface{}, ctx context.Context, de
 		Server:     srv,
 		FullMethod: "/nicecms.media.v1.MediaService/FetchGallery",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(MediaServiceServer).FetchGallery(ctx, req.(*v1.UUID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MediaService_SortGallery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MediaService_SortGallery_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(SortGalleryReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -500,7 +500,7 @@ func _MediaService_SortGallery_Handler(srv interface{}, ctx context.Context, dec
 		Server:     srv,
 		FullMethod: "/nicecms.media.v1.MediaService/SortGallery",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(MediaServiceServer).SortGallery(ctx, req.(*SortGalleryReq))
 	}
 	return interceptor(ctx, in, info, handler)

@@ -66,7 +66,7 @@ func TestShelf_Create_alreadyCreated(t *testing.T) {
 		t.Fatalf("Create should fail with %q if the Shelf was already created; got %q", document.ErrShelfAlreadyCreated, err)
 	}
 
-	test.Change(t, shelf, document.ShelfCreated, test.EventData(document.ShelfCreatedData{Name: exampleShelfName}), test.Exactly(1))
+	test.Change(t, shelf, document.ShelfCreated, test.EventData(document.ShelfCreatedData{Name: exampleShelfName}), test.Exactly[document.ShelfCreatedData](1))
 }
 
 func TestShelf_Create_emptyName(t *testing.T) {
@@ -81,7 +81,7 @@ func TestShelf_Create_emptyName(t *testing.T) {
 		t.Fatalf("Name should be %q; got %q", "", shelf.Name)
 	}
 
-	test.NoChange(t, shelf, document.ShelfCreated)
+	test.NoChange[any](t, shelf, document.ShelfCreated)
 }
 
 func TestShelf_Add_notCreated(t *testing.T) {
@@ -94,7 +94,7 @@ func TestShelf_Add_notCreated(t *testing.T) {
 		t.Fatalf("Add should fail with %q if the Shelf wasn't created yet; got %q", document.ErrShelfNotCreated, err)
 	}
 
-	test.NoChange(t, shelf, document.DocumentAdded)
+	test.NoChange[any](t, shelf, document.DocumentAdded)
 }
 
 func TestShelf_Add(t *testing.T) {
@@ -169,7 +169,7 @@ func TestShelf_Add_duplicateUniqueName(t *testing.T) {
 		t.Fatalf("Add should fail with %q; got %q", document.ErrDuplicateUniqueName, err)
 	}
 
-	test.Change(t, shelf, document.DocumentAdded, test.EventData(document.DocumentAddedData{Document: doc}), test.Exactly(1))
+	test.Change(t, shelf, document.DocumentAdded, test.EventData(document.DocumentAddedData{Document: doc}), test.Exactly[document.DocumentAddedData](1))
 }
 
 func TestShelf_Remove_notCreated(t *testing.T) {
@@ -180,7 +180,7 @@ func TestShelf_Remove_notCreated(t *testing.T) {
 		t.Fatalf("Remove should fail with %q if the Shelf wasn't created yet; got %q", document.ErrShelfNotCreated, err)
 	}
 
-	test.NoChange(t, shelf, document.DocumentRemoved)
+	test.NoChange[any](t, shelf, document.DocumentRemoved)
 }
 
 func TestShelf_Remove(t *testing.T) {
@@ -384,7 +384,7 @@ func TestShelf_MakeUnique_duplicateUniqueName(t *testing.T) {
 		t.Fatalf("MakeUnique should fail with %q; got %q", document.ErrDuplicateUniqueName, err)
 	}
 
-	test.NoChange(t, shelf, document.DocumentMadeUnique)
+	test.NoChange[any](t, shelf, document.DocumentMadeUnique)
 }
 
 func TestShelf_MakeUnique_rename(t *testing.T) {
@@ -436,7 +436,7 @@ func TestShelf_MakeUnique_emptyName(t *testing.T) {
 		t.Fatalf("MakeUnique should fail with %q; got %q", document.ErrEmptyName, err)
 	}
 
-	test.NoChange(t, shelf, document.DocumentMadeUnique)
+	test.NoChange[any](t, shelf, document.DocumentMadeUnique)
 }
 
 func TestShelf_MakeNonUnique(t *testing.T) {

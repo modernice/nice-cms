@@ -18,7 +18,7 @@ type FriendlyError struct {
 }
 
 // Friendly returns a FriendlyError that wraps err with the provided message.
-func Friendly(err error, format string, v ...interface{}) error {
+func Friendly(err error, format string, v ...any) error {
 	return FriendlyError{
 		Err:     err,
 		Message: fmt.Sprintf(format, v...),
@@ -57,10 +57,10 @@ func Error(w http.ResponseWriter, r *http.Request, status int, err error) {
 		render.Status(r, status)
 	}
 
-	render.JSON(w, r, map[string]interface{}{"error": msg})
+	render.JSON(w, r, map[string]any{"error": msg})
 }
 
-func JSON(w http.ResponseWriter, r *http.Request, status int, v interface{}) {
+func JSON(w http.ResponseWriter, r *http.Request, status int, v any) {
 	if status != 0 {
 		render.Status(r, status)
 	}
@@ -83,7 +83,7 @@ func ExtractUUID(r *http.Request, name string) (uuid.UUID, error) {
 	return ParseUUID(chi.URLParam(r, name), name)
 }
 
-func Decode(r io.Reader, v interface{}) error {
+func Decode(r io.Reader, v any) error {
 	if err := json.NewDecoder(r).Decode(v); err != nil {
 		return Friendly(err, "Malformed JSON request: %v", err)
 	}

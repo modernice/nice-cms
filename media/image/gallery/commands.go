@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/modernice/goes/codec"
 	"github.com/modernice/goes/command"
-	"github.com/modernice/goes/helper/fanin"
+	"github.com/modernice/goes/helper/streams"
 	"github.com/modernice/nice-cms/media"
 )
 
@@ -26,8 +26,8 @@ type createPayload struct {
 }
 
 // Create returns the command to create a gallery.
-func Create(id uuid.UUID, name string) command.Command {
-	return command.New(CreateCommand, createPayload{Name: name}, command.Aggregate(Aggregate, id))
+func Create(id uuid.UUID, name string) command.Cmd[createPayload] {
+	return command.New(CreateCommand, createPayload{Name: name}, command.Aggregate[createPayload](Aggregate, id))
 }
 
 type deleteStackPayload struct {
@@ -35,8 +35,8 @@ type deleteStackPayload struct {
 }
 
 // DeleteStack returns the command to delete an image from a gallery.
-func DeleteStack(galleryID, stackID uuid.UUID) command.Command {
-	return command.New(DeleteStackCommand, deleteStackPayload{StackID: stackID}, command.Aggregate(Aggregate, galleryID))
+func DeleteStack(galleryID, stackID uuid.UUID) command.Cmd[deleteStackPayload] {
+	return command.New(DeleteStackCommand, deleteStackPayload{StackID: stackID}, command.Aggregate[deleteStackPayload](Aggregate, galleryID))
 }
 
 type tagStackPayload struct {
@@ -45,11 +45,11 @@ type tagStackPayload struct {
 }
 
 // TagStack returns the command to tag an image of a gallery.
-func TagStack(galleryID, stackID uuid.UUID, tags []string) command.Command {
+func TagStack(galleryID, stackID uuid.UUID, tags []string) command.Cmd[tagStackPayload] {
 	return command.New(TagStackCommand, tagStackPayload{
 		StackID: stackID,
 		Tags:    tags,
-	}, command.Aggregate(Aggregate, galleryID))
+	}, command.Aggregate[tagStackPayload](Aggregate, galleryID))
 }
 
 type untagStackPayload struct {
@@ -58,11 +58,11 @@ type untagStackPayload struct {
 }
 
 // UntagStack returns the command to remove tags from an image of a gallery.
-func UntagStack(galleryID, stackID uuid.UUID, tags []string) command.Command {
+func UntagStack(galleryID, stackID uuid.UUID, tags []string) command.Cmd[untagStackPayload] {
 	return command.New(UntagStackCommand, untagStackPayload{
 		StackID: stackID,
 		Tags:    tags,
-	}, command.Aggregate(Aggregate, galleryID))
+	}, command.Aggregate[untagStackPayload](Aggregate, galleryID))
 }
 
 type renameStackPayload struct {
@@ -71,11 +71,11 @@ type renameStackPayload struct {
 }
 
 // RenameStack returns the command to rename an image of a gallery.
-func RenameStack(galleryID, stackID uuid.UUID, name string) command.Command {
+func RenameStack(galleryID, stackID uuid.UUID, name string) command.Cmd[renameStackPayload] {
 	return command.New(RenameStackCommand, renameStackPayload{
 		StackID: stackID,
 		Name:    name,
-	}, command.Aggregate(Aggregate, galleryID))
+	}, command.Aggregate[renameStackPayload](Aggregate, galleryID))
 }
 
 type updateStackPayload struct {
@@ -83,8 +83,8 @@ type updateStackPayload struct {
 }
 
 // UpdateStack returns the command to update a stack of a gallery.
-func UpdateStack(galleryID uuid.UUID, stack Stack) command.Command {
-	return command.New(UpdateStackCommand, updateStackPayload{Stack: stack}, command.Aggregate(Aggregate, galleryID))
+func UpdateStack(galleryID uuid.UUID, stack Stack) command.Cmd[updateStackPayload] {
+	return command.New(UpdateStackCommand, updateStackPayload{Stack: stack}, command.Aggregate[updateStackPayload](Aggregate, galleryID))
 }
 
 type sortPayload struct {
@@ -92,26 +92,24 @@ type sortPayload struct {
 }
 
 // Sort returns the command to sort a gallery.
-func Sort(galleryID uuid.UUID, sorting []uuid.UUID) command.Command {
-	return command.New(SortCommand, sortPayload{Sorting: sorting}, command.Aggregate(Aggregate, galleryID))
+func Sort(galleryID uuid.UUID, sorting []uuid.UUID) command.Cmd[sortPayload] {
+	return command.New(SortCommand, sortPayload{Sorting: sorting}, command.Aggregate[sortPayload](Aggregate, galleryID))
 }
 
 // RegisterCommands register the gallery commands into a command registry.
 func RegisterCommands(r *codec.GobRegistry) {
-	r.GobRegister(CreateCommand, func() interface{} { return createPayload{} })
-	r.GobRegister(DeleteStackCommand, func() interface{} { return deleteStackPayload{} })
-	r.GobRegister(TagStackCommand, func() interface{} { return tagStackPayload{} })
-	r.GobRegister(UntagStackCommand, func() interface{} { return untagStackPayload{} })
-	r.GobRegister(RenameStackCommand, func() interface{} { return renameStackPayload{} })
-	r.GobRegister(UpdateStackCommand, func() interface{} { return updateStackPayload{} })
-	r.GobRegister(SortCommand, func() interface{} { return sortPayload{} })
+	codec.GobRegister[createPayload](r, CreateCommand)
+	codec.GobRegister[deleteStackPayload](r, DeleteStackCommand)
+	codec.GobRegister[tagStackPayload](r, TagStackCommand)
+	codec.GobRegister[untagStackPayload](r, UntagStackCommand)
+	codec.GobRegister[renameStackPayload](r, RenameStackCommand)
+	codec.GobRegister[updateStackPayload](r, UpdateStackCommand)
+	codec.GobRegister[sortPayload](r, SortCommand)
 }
 
 // HandleCommands handles commands until ctx is canceled.
 func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, storage media.Storage) <-chan error {
-	h := command.NewHandler(bus)
-
-	createErrors := h.MustHandle(ctx, CreateCommand, func(ctx command.Context) error {
+	createErrors := command.MustHandle(ctx, bus, CreateCommand, func(ctx command.Context) error {
 		load := ctx.Payload().(createPayload)
 
 		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
@@ -119,7 +117,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		})
 	})
 
-	deleteStackErrors := h.MustHandle(ctx, DeleteStackCommand, func(ctx command.Context) error {
+	deleteStackErrors := command.MustHandle(ctx, bus, DeleteStackCommand, func(ctx command.Context) error {
 		load := ctx.Payload().(deleteStackPayload)
 
 		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
@@ -131,7 +129,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		})
 	})
 
-	tagStackErrors := h.MustHandle(ctx, TagStackCommand, func(ctx command.Context) error {
+	tagStackErrors := command.MustHandle(ctx, bus, TagStackCommand, func(ctx command.Context) error {
 		load := ctx.Payload().(tagStackPayload)
 
 		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
@@ -144,7 +142,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		})
 	})
 
-	untagStackErrors := h.MustHandle(ctx, UntagStackCommand, func(ctx command.Context) error {
+	untagStackErrors := command.MustHandle(ctx, bus, UntagStackCommand, func(ctx command.Context) error {
 		load := ctx.Payload().(untagStackPayload)
 
 		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
@@ -157,7 +155,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		})
 	})
 
-	renameStackErrors := h.MustHandle(ctx, RenameStackCommand, func(ctx command.Context) error {
+	renameStackErrors := command.MustHandle(ctx, bus, RenameStackCommand, func(ctx command.Context) error {
 		load := ctx.Payload().(renameStackPayload)
 
 		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
@@ -166,7 +164,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		})
 	})
 
-	updateStackErrors := h.MustHandle(ctx, UpdateStackCommand, func(ctx command.Context) error {
+	updateStackErrors := command.MustHandle(ctx, bus, UpdateStackCommand, func(ctx command.Context) error {
 		load := ctx.Payload().(updateStackPayload)
 
 		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
@@ -176,7 +174,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		})
 	})
 
-	sortErrors := h.MustHandle(ctx, SortCommand, func(ctx command.Context) error {
+	sortErrors := command.MustHandle(ctx, bus, SortCommand, func(ctx command.Context) error {
 		load := ctx.Payload().(sortPayload)
 
 		return galleries.Use(ctx, ctx.AggregateID(), func(g *Gallery) error {
@@ -185,7 +183,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, galleries Repository, 
 		})
 	})
 
-	return fanin.ErrorsContext(
+	return streams.FanInContext(
 		ctx,
 		createErrors,
 		deleteStackErrors,

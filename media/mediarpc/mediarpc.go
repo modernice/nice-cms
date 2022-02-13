@@ -290,12 +290,12 @@ func (s *Server) UploadImage(stream protomedia.MediaService_UploadImageServer) e
 
 	g, err := s.galleries.Fetch(ctx, ptypes.UUID(meta.GetGalleryId()))
 	if err != nil {
-		return status.Errorf(codes.NotFound, "Failed to fetch gallery: %w", err)
+		return status.Errorf(codes.NotFound, "Failed to fetch gallery: %v", err)
 	}
 
 	stack, err := g.Upload(ctx, s.storage, pr, meta.GetName(), meta.GetDisk(), meta.GetPath())
 	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to upload image: %w", err)
+		return status.Errorf(codes.Internal, "Failed to upload image: %v", err)
 	}
 
 	if err := s.galleries.Use(ctx, g.ID, func(gal *gallery.Gallery) error {

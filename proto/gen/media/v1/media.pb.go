@@ -1433,7 +1433,7 @@ func file_media_proto_rawDescGZIP() []byte {
 }
 
 var file_media_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
-var file_media_proto_goTypes = []interface{}{
+var file_media_proto_goTypes = []any{
 	(*StorageFile)(nil),                                // 0: nicecms.media.v1.StorageFile
 	(*StorageImage)(nil),                               // 1: nicecms.media.v1.StorageImage
 	(*StorageDocument)(nil),                            // 2: nicecms.media.v1.StorageDocument
@@ -1515,7 +1515,7 @@ func file_media_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_media_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*StorageFile); i {
 			case 0:
 				return &v.state
@@ -1527,7 +1527,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*StorageImage); i {
 			case 0:
 				return &v.state
@@ -1539,7 +1539,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*StorageDocument); i {
 			case 0:
 				return &v.state
@@ -1551,7 +1551,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*UploadDocumentReq); i {
 			case 0:
 				return &v.state
@@ -1563,7 +1563,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*ReplaceDocumentReq); i {
 			case 0:
 				return &v.state
@@ -1575,7 +1575,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*Shelf); i {
 			case 0:
 				return &v.state
@@ -1587,7 +1587,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*ShelfDocument); i {
 			case 0:
 				return &v.state
@@ -1599,7 +1599,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[7].Exporter = func(v any, i int) any {
 			switch v := v.(*LookupGalleryStackByNameReq); i {
 			case 0:
 				return &v.state
@@ -1611,7 +1611,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[8].Exporter = func(v any, i int) any {
 			switch v := v.(*UploadImageReq); i {
 			case 0:
 				return &v.state
@@ -1623,7 +1623,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[9].Exporter = func(v any, i int) any {
 			switch v := v.(*ReplaceImageReq); i {
 			case 0:
 				return &v.state
@@ -1635,7 +1635,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[10].Exporter = func(v any, i int) any {
 			switch v := v.(*Gallery); i {
 			case 0:
 				return &v.state
@@ -1647,7 +1647,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[11].Exporter = func(v any, i int) any {
 			switch v := v.(*Stack); i {
 			case 0:
 				return &v.state
@@ -1659,7 +1659,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[12].Exporter = func(v any, i int) any {
 			switch v := v.(*StackImage); i {
 			case 0:
 				return &v.state
@@ -1671,7 +1671,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[13].Exporter = func(v any, i int) any {
 			switch v := v.(*SortGalleryReq); i {
 			case 0:
 				return &v.state
@@ -1683,7 +1683,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[14].Exporter = func(v any, i int) any {
 			switch v := v.(*UploadDocumentReq_UploadDocumentMetadata); i {
 			case 0:
 				return &v.state
@@ -1695,7 +1695,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[15].Exporter = func(v any, i int) any {
 			switch v := v.(*ReplaceDocumentReq_ReplaceDocumentMetadata); i {
 			case 0:
 				return &v.state
@@ -1707,7 +1707,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[16].Exporter = func(v any, i int) any {
 			switch v := v.(*UploadImageReq_UploadImageMetadata); i {
 			case 0:
 				return &v.state
@@ -1719,7 +1719,7 @@ func file_media_proto_init() {
 				return nil
 			}
 		}
-		file_media_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_media_proto_msgTypes[17].Exporter = func(v any, i int) any {
 			switch v := v.(*ReplaceImageReq_ReplaceImageMetadata); i {
 			case 0:
 				return &v.state
@@ -1732,19 +1732,19 @@ func file_media_proto_init() {
 			}
 		}
 	}
-	file_media_proto_msgTypes[3].OneofWrappers = []interface{}{
+	file_media_proto_msgTypes[3].OneofWrappers = []any{
 		(*UploadDocumentReq_Metadata)(nil),
 		(*UploadDocumentReq_Chunk)(nil),
 	}
-	file_media_proto_msgTypes[4].OneofWrappers = []interface{}{
+	file_media_proto_msgTypes[4].OneofWrappers = []any{
 		(*ReplaceDocumentReq_Metadata)(nil),
 		(*ReplaceDocumentReq_Chunk)(nil),
 	}
-	file_media_proto_msgTypes[8].OneofWrappers = []interface{}{
+	file_media_proto_msgTypes[8].OneofWrappers = []any{
 		(*UploadImageReq_Metadata)(nil),
 		(*UploadImageReq_Chunk)(nil),
 	}
-	file_media_proto_msgTypes[9].OneofWrappers = []interface{}{
+	file_media_proto_msgTypes[9].OneofWrappers = []any{
 		(*ReplaceImageReq_Metadata)(nil),
 		(*ReplaceImageReq_Chunk)(nil),
 	}

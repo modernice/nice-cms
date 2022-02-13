@@ -45,7 +45,7 @@ func (m *MockStorage) Disk(arg0 string) (media.StorageDisk, error) {
 }
 
 // Disk indicates an expected call of Disk.
-func (mr *MockStorageMockRecorder) Disk(arg0 interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) Disk(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Disk", reflect.TypeOf((*MockStorage)(nil).Disk), arg0)
 }
@@ -82,7 +82,7 @@ func (m *MockStorageDisk) Delete(arg0 context.Context, arg1 string) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockStorageDiskMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockStorageDiskMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockStorageDisk)(nil).Delete), arg0, arg1)
 }
@@ -97,7 +97,7 @@ func (m *MockStorageDisk) Get(arg0 context.Context, arg1 string) ([]byte, error)
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockStorageDiskMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockStorageDiskMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorageDisk)(nil).Get), arg0, arg1)
 }
@@ -111,7 +111,7 @@ func (m *MockStorageDisk) Put(arg0 context.Context, arg1 string, arg2 []byte) er
 }
 
 // Put indicates an expected call of Put.
-func (mr *MockStorageDiskMockRecorder) Put(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockStorageDiskMockRecorder) Put(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockStorageDisk)(nil).Put), arg0, arg1, arg2)
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/modernice/goes/codec"
 	"github.com/modernice/goes/command"
-	"github.com/modernice/goes/helper/fanin"
+	"github.com/modernice/goes/helper/streams"
 	"github.com/modernice/nice-cms/media"
 )
 
@@ -24,15 +24,15 @@ const (
 type createShelfPayload struct{ Name string }
 
 // CreateShelf returns the command to create a shelf.
-func CreateShelf(id uuid.UUID, name string) command.Command {
-	return command.New(CreateShelfCommand, createShelfPayload{Name: name}, command.Aggregate(Aggregate, id))
+func CreateShelf(id uuid.UUID, name string) command.Cmd[createShelfPayload] {
+	return command.New(CreateShelfCommand, createShelfPayload{Name: name}, command.Aggregate[createShelfPayload](Aggregate, id))
 }
 
 type removePayload struct{ DocumentID uuid.UUID }
 
 // Remove returns the command to remove a document from a shelf.
-func Remove(shelfID, documentID uuid.UUID) command.Command {
-	return command.New(RemoveCommand, removePayload{DocumentID: documentID}, command.Aggregate(Aggregate, shelfID))
+func Remove(shelfID, documentID uuid.UUID) command.Cmd[removePayload] {
+	return command.New(RemoveCommand, removePayload{DocumentID: documentID}, command.Aggregate[removePayload](Aggregate, shelfID))
 }
 
 type renamePayload struct {
@@ -41,11 +41,11 @@ type renamePayload struct {
 }
 
 // Rename returns the command to rename a document in a shelf.
-func Rename(shelfID, documentID uuid.UUID, name string) command.Command {
+func Rename(shelfID, documentID uuid.UUID, name string) command.Cmd[renamePayload] {
 	return command.New(RenameCommand, renamePayload{
 		DocumentID: documentID,
 		Name:       name,
-	}, command.Aggregate(Aggregate, shelfID))
+	}, command.Aggregate[renamePayload](Aggregate, shelfID))
 }
 
 type makeUniquePayload struct {
@@ -54,21 +54,21 @@ type makeUniquePayload struct {
 }
 
 // MakeUnique returns the command to make a document unique within a shelf.
-func MakeUnique(shelfID, documentID uuid.UUID, uniqueName string) command.Command {
+func MakeUnique(shelfID, documentID uuid.UUID, uniqueName string) command.Cmd[makeUniquePayload] {
 	return command.New(MakeUniqueCommand, makeUniquePayload{
 		DocumentID: documentID,
 		UniqueName: uniqueName,
-	}, command.Aggregate(Aggregate, shelfID))
+	}, command.Aggregate[makeUniquePayload](Aggregate, shelfID))
 }
 
 type makeNonUniquePayload struct{ DocumentID uuid.UUID }
 
 // MakeNonUnique returns the command to remove the uniqueness of a document
 // within a shelf.
-func MakeNonUnique(shelfID, documentID uuid.UUID) command.Command {
+func MakeNonUnique(shelfID, documentID uuid.UUID) command.Cmd[makeNonUniquePayload] {
 	return command.New(MakeNonUniqueCommand, makeNonUniquePayload{
 		DocumentID: documentID,
-	}, command.Aggregate(Aggregate, shelfID))
+	}, command.Aggregate[makeNonUniquePayload](Aggregate, shelfID))
 }
 
 type tagPayload struct {
@@ -77,11 +77,11 @@ type tagPayload struct {
 }
 
 // Tag returns the command to add tags to a document of a shelf.
-func Tag(shelfID, documentID uuid.UUID, tags []string) command.Command {
+func Tag(shelfID, documentID uuid.UUID, tags []string) command.Cmd[tagPayload] {
 	return command.New(TagCommand, tagPayload{
 		DocumentID: documentID,
 		Tags:       tags,
-	}, command.Aggregate(Aggregate, shelfID))
+	}, command.Aggregate[tagPayload](Aggregate, shelfID))
 }
 
 type untagPayload struct {
@@ -90,46 +90,44 @@ type untagPayload struct {
 }
 
 // Untag returns the command to remove tags from a document of a shelf.
-func Untag(shelfID, documentID uuid.UUID, tags []string) command.Command {
+func Untag(shelfID, documentID uuid.UUID, tags []string) command.Cmd[untagPayload] {
 	return command.New(UntagCommand, untagPayload{
 		DocumentID: documentID,
 		Tags:       tags,
-	}, command.Aggregate(Aggregate, shelfID))
+	}, command.Aggregate[untagPayload](Aggregate, shelfID))
 }
 
 // RegisterCommand registers document commands.
 func RegisterCommands(r *codec.GobRegistry) {
-	r.GobRegister(CreateShelfCommand, func() interface{} { return createShelfPayload{} })
-	r.GobRegister(RemoveCommand, func() interface{} { return removePayload{} })
-	r.GobRegister(RenameCommand, func() interface{} { return renamePayload{} })
-	r.GobRegister(MakeUniqueCommand, func() interface{} { return makeUniquePayload{} })
-	r.GobRegister(MakeNonUniqueCommand, func() interface{} { return makeNonUniquePayload{} })
-	r.GobRegister(TagCommand, func() interface{} { return tagPayload{} })
-	r.GobRegister(UntagCommand, func() interface{} { return untagPayload{} })
+	codec.GobRegister[createShelfPayload](r, CreateShelfCommand)
+	codec.GobRegister[removePayload](r, RemoveCommand)
+	codec.GobRegister[renamePayload](r, RenameCommand)
+	codec.GobRegister[makeUniquePayload](r, MakeUniqueCommand)
+	codec.GobRegister[makeNonUniquePayload](r, MakeNonUniqueCommand)
+	codec.GobRegister[tagPayload](r, TagCommand)
+	codec.GobRegister[untagPayload](r, UntagCommand)
 }
 
 // HandleCommand handles commands until ctx is canceled.
 func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, storage media.Storage) <-chan error {
-	h := command.NewHandler(bus)
-
-	createErrors := h.MustHandle(ctx, CreateShelfCommand, func(ctx command.Context) error {
-		load := ctx.Payload().(createShelfPayload)
+	createErrors := command.MustHandle(ctx, bus, CreateShelfCommand, func(ctx command.ContextOf[createShelfPayload]) error {
+		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			return s.Create(load.Name)
 		})
 	})
 
-	removeErrors := h.MustHandle(ctx, RemoveCommand, func(ctx command.Context) error {
-		load := ctx.Payload().(removePayload)
+	removeErrors := command.MustHandle(ctx, bus, RemoveCommand, func(ctx command.ContextOf[removePayload]) error {
+		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			return s.Remove(ctx, storage, load.DocumentID)
 		})
 	})
 
-	renameErrors := h.MustHandle(ctx, RenameCommand, func(ctx command.Context) error {
-		load := ctx.Payload().(renamePayload)
+	renameErrors := command.MustHandle(ctx, bus, RenameCommand, func(ctx command.ContextOf[renamePayload]) error {
+		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.RenameDocument(load.DocumentID, load.Name)
@@ -137,8 +135,8 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	makeUniqueErrors := h.MustHandle(ctx, MakeUniqueCommand, func(ctx command.Context) error {
-		load := ctx.Payload().(makeUniquePayload)
+	makeUniqueErrors := command.MustHandle(ctx, bus, MakeUniqueCommand, func(ctx command.ContextOf[makeUniquePayload]) error {
+		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.MakeUnique(load.DocumentID, load.UniqueName)
@@ -146,8 +144,8 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	makeNonUniqueErrors := h.MustHandle(ctx, MakeNonUniqueCommand, func(ctx command.Context) error {
-		load := ctx.Payload().(makeNonUniquePayload)
+	makeNonUniqueErrors := command.MustHandle(ctx, bus, MakeNonUniqueCommand, func(ctx command.ContextOf[makeNonUniquePayload]) error {
+		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.MakeNonUnique(load.DocumentID)
@@ -155,8 +153,8 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	tagErrors := h.MustHandle(ctx, TagCommand, func(ctx command.Context) error {
-		load := ctx.Payload().(tagPayload)
+	tagErrors := command.MustHandle(ctx, bus, TagCommand, func(ctx command.ContextOf[tagPayload]) error {
+		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.Tag(load.DocumentID, load.Tags...)
@@ -164,8 +162,8 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	untagErrors := h.MustHandle(ctx, UntagCommand, func(ctx command.Context) error {
-		load := ctx.Payload().(untagPayload)
+	untagErrors := command.MustHandle(ctx, bus, UntagCommand, func(ctx command.ContextOf[untagPayload]) error {
+		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
 			_, err := s.Untag(load.DocumentID, load.Tags...)
@@ -173,7 +171,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	return fanin.ErrorsContext(
+	return streams.FanInContext(
 		ctx,
 		createErrors,
 		removeErrors,
