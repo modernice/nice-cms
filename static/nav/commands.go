@@ -25,7 +25,7 @@ func CreateCmd(name string, items ...Item) command.Cmd[createPayload] {
 	return command.New(CreateCommand, createPayload{
 		Name:  name,
 		Items: items,
-	}, command.Aggregate[createPayload](Aggregate, uuid.New()))
+	}, command.Aggregate(Aggregate, uuid.New()))
 }
 
 // RegisterCommands register commands into a registry.

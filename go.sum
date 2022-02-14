@@ -183,6 +183,8 @@ github.com/mitchellh/mapstructure v1.4.3 h1:OVowDSCllw/YjdLkam3/sm7wEtOy59d8ndGg
 github.com/mitchellh/mapstructure v1.4.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/modernice/goes v0.1.1-0.20220213195855-cbeb86ebff11 h1:M5fyc3yKkqqfg7uv/R2lCART/8hYZ1xlZHhMgSAVPy0=
 github.com/modernice/goes v0.1.1-0.20220213195855-cbeb86ebff11/go.mod h1:8FUDOpdOZnddewTXElQgops12jIwx80mrXSK5lV1UYc=
+github.com/modernice/goes v0.1.1-0.20220214170015-b2736a35ed61 h1:xD/Fh1POGJ7DK7GEmHG0DxGXNubE90QRr+mhDHVob2I=
+github.com/modernice/goes v0.1.1-0.20220214170015-b2736a35ed61/go.mod h1:R3WvFah9dwOyjxZdpGR9sL+NMsqwcmZucuwLFx7gSzs=
 github.com/nats-io/nats.go v1.13.1-0.20211122170419-d7c1d78a50fc h1:SHr4MUUZJ/fAC0uSm2OzWOJYsHpapmR86mpw7q1qPXU=
 github.com/nats-io/nkeys v0.3.0 h1:cgM5tL53EvYRU+2YLXIK0G2mJtK12Ft9oeooSZMA2G8=
 github.com/nats-io/nuid v1.0.1 h1:5iA8DT8V7q8WK2EScv2padNa/rTESc1KdnPw4TC2paw=

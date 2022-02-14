@@ -25,14 +25,14 @@ type createShelfPayload struct{ Name string }
 
 // CreateShelf returns the command to create a shelf.
 func CreateShelf(id uuid.UUID, name string) command.Cmd[createShelfPayload] {
-	return command.New(CreateShelfCommand, createShelfPayload{Name: name}, command.Aggregate[createShelfPayload](Aggregate, id))
+	return command.New(CreateShelfCommand, createShelfPayload{Name: name}, command.Aggregate(Aggregate, id))
 }
 
 type removePayload struct{ DocumentID uuid.UUID }
 
 // Remove returns the command to remove a document from a shelf.
 func Remove(shelfID, documentID uuid.UUID) command.Cmd[removePayload] {
-	return command.New(RemoveCommand, removePayload{DocumentID: documentID}, command.Aggregate[removePayload](Aggregate, shelfID))
+	return command.New(RemoveCommand, removePayload{DocumentID: documentID}, command.Aggregate(Aggregate, shelfID))
 }
 
 type renamePayload struct {
@@ -45,7 +45,7 @@ func Rename(shelfID, documentID uuid.UUID, name string) command.Cmd[renamePayloa
 	return command.New(RenameCommand, renamePayload{
 		DocumentID: documentID,
 		Name:       name,
-	}, command.Aggregate[renamePayload](Aggregate, shelfID))
+	}, command.Aggregate(Aggregate, shelfID))
 }
 
 type makeUniquePayload struct {
@@ -58,7 +58,7 @@ func MakeUnique(shelfID, documentID uuid.UUID, uniqueName string) command.Cmd[ma
 	return command.New(MakeUniqueCommand, makeUniquePayload{
 		DocumentID: documentID,
 		UniqueName: uniqueName,
-	}, command.Aggregate[makeUniquePayload](Aggregate, shelfID))
+	}, command.Aggregate(Aggregate, shelfID))
 }
 
 type makeNonUniquePayload struct{ DocumentID uuid.UUID }
@@ -68,7 +68,7 @@ type makeNonUniquePayload struct{ DocumentID uuid.UUID }
 func MakeNonUnique(shelfID, documentID uuid.UUID) command.Cmd[makeNonUniquePayload] {
 	return command.New(MakeNonUniqueCommand, makeNonUniquePayload{
 		DocumentID: documentID,
-	}, command.Aggregate[makeNonUniquePayload](Aggregate, shelfID))
+	}, command.Aggregate(Aggregate, shelfID))
 }
 
 type tagPayload struct {
@@ -81,7 +81,7 @@ func Tag(shelfID, documentID uuid.UUID, tags []string) command.Cmd[tagPayload] {
 	return command.New(TagCommand, tagPayload{
 		DocumentID: documentID,
 		Tags:       tags,
-	}, command.Aggregate[tagPayload](Aggregate, shelfID))
+	}, command.Aggregate(Aggregate, shelfID))
 }
 
 type untagPayload struct {
@@ -94,7 +94,7 @@ func Untag(shelfID, documentID uuid.UUID, tags []string) command.Cmd[untagPayloa
 	return command.New(UntagCommand, untagPayload{
 		DocumentID: documentID,
 		Tags:       tags,
-	}, command.Aggregate[untagPayload](Aggregate, shelfID))
+	}, command.Aggregate(Aggregate, shelfID))
 }
 
 // RegisterCommand registers document commands.

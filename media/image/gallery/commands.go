@@ -27,7 +27,7 @@ type createPayload struct {
 
 // Create returns the command to create a gallery.
 func Create(id uuid.UUID, name string) command.Cmd[createPayload] {
-	return command.New(CreateCommand, createPayload{Name: name}, command.Aggregate[createPayload](Aggregate, id))
+	return command.New(CreateCommand, createPayload{Name: name}, command.Aggregate(Aggregate, id))
 }
 
 type deleteStackPayload struct {
@@ -36,7 +36,7 @@ type deleteStackPayload struct {
 
 // DeleteStack returns the command to delete an image from a gallery.
 func DeleteStack(galleryID, stackID uuid.UUID) command.Cmd[deleteStackPayload] {
-	return command.New(DeleteStackCommand, deleteStackPayload{StackID: stackID}, command.Aggregate[deleteStackPayload](Aggregate, galleryID))
+	return command.New(DeleteStackCommand, deleteStackPayload{StackID: stackID}, command.Aggregate(Aggregate, galleryID))
 }
 
 type tagStackPayload struct {
@@ -49,7 +49,7 @@ func TagStack(galleryID, stackID uuid.UUID, tags []string) command.Cmd[tagStackP
 	return command.New(TagStackCommand, tagStackPayload{
 		StackID: stackID,
 		Tags:    tags,
-	}, command.Aggregate[tagStackPayload](Aggregate, galleryID))
+	}, command.Aggregate(Aggregate, galleryID))
 }
 
 type untagStackPayload struct {
@@ -62,7 +62,7 @@ func UntagStack(galleryID, stackID uuid.UUID, tags []string) command.Cmd[untagSt
 	return command.New(UntagStackCommand, untagStackPayload{
 		StackID: stackID,
 		Tags:    tags,
-	}, command.Aggregate[untagStackPayload](Aggregate, galleryID))
+	}, command.Aggregate(Aggregate, galleryID))
 }
 
 type renameStackPayload struct {
@@ -75,7 +75,7 @@ func RenameStack(galleryID, stackID uuid.UUID, name string) command.Cmd[renameSt
 	return command.New(RenameStackCommand, renameStackPayload{
 		StackID: stackID,
 		Name:    name,
-	}, command.Aggregate[renameStackPayload](Aggregate, galleryID))
+	}, command.Aggregate(Aggregate, galleryID))
 }
 
 type updateStackPayload struct {
@@ -84,7 +84,7 @@ type updateStackPayload struct {
 
 // UpdateStack returns the command to update a stack of a gallery.
 func UpdateStack(galleryID uuid.UUID, stack Stack) command.Cmd[updateStackPayload] {
-	return command.New(UpdateStackCommand, updateStackPayload{Stack: stack}, command.Aggregate[updateStackPayload](Aggregate, galleryID))
+	return command.New(UpdateStackCommand, updateStackPayload{Stack: stack}, command.Aggregate(Aggregate, galleryID))
 }
 
 type sortPayload struct {
@@ -93,7 +93,7 @@ type sortPayload struct {
 
 // Sort returns the command to sort a gallery.
 func Sort(galleryID uuid.UUID, sorting []uuid.UUID) command.Cmd[sortPayload] {
-	return command.New(SortCommand, sortPayload{Sorting: sorting}, command.Aggregate[sortPayload](Aggregate, galleryID))
+	return command.New(SortCommand, sortPayload{Sorting: sorting}, command.Aggregate(Aggregate, galleryID))
 }
 
 // RegisterCommands register the gallery commands into a command registry.

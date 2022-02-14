@@ -316,7 +316,7 @@ func TestNav_Remove_initialItem(t *testing.T) {
 		t.Fatalf("Remove should fail with %q; got %q", nav.ErrInitialItem, err)
 	}
 
-	test.NoChange[any](t, tree, nav.ItemsRemoved)
+	test.NoChange(t, tree, nav.ItemsRemoved)
 }
 
 func TestNav_Sort(t *testing.T) {
