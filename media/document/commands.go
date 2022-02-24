@@ -110,7 +110,7 @@ func RegisterCommands(r *codec.GobRegistry) {
 
 // HandleCommand handles commands until ctx is canceled.
 func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, storage media.Storage) <-chan error {
-	createErrors := command.MustHandle(ctx, bus, CreateShelfCommand, func(ctx command.ContextOf[createShelfPayload]) error {
+	createErrors := command.MustHandle(ctx, bus, CreateShelfCommand, func(ctx command.Ctx[createShelfPayload]) error {
 		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
@@ -118,7 +118,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	removeErrors := command.MustHandle(ctx, bus, RemoveCommand, func(ctx command.ContextOf[removePayload]) error {
+	removeErrors := command.MustHandle(ctx, bus, RemoveCommand, func(ctx command.Ctx[removePayload]) error {
 		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
@@ -126,7 +126,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	renameErrors := command.MustHandle(ctx, bus, RenameCommand, func(ctx command.ContextOf[renamePayload]) error {
+	renameErrors := command.MustHandle(ctx, bus, RenameCommand, func(ctx command.Ctx[renamePayload]) error {
 		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
@@ -135,7 +135,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	makeUniqueErrors := command.MustHandle(ctx, bus, MakeUniqueCommand, func(ctx command.ContextOf[makeUniquePayload]) error {
+	makeUniqueErrors := command.MustHandle(ctx, bus, MakeUniqueCommand, func(ctx command.Ctx[makeUniquePayload]) error {
 		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
@@ -144,7 +144,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	makeNonUniqueErrors := command.MustHandle(ctx, bus, MakeNonUniqueCommand, func(ctx command.ContextOf[makeNonUniquePayload]) error {
+	makeNonUniqueErrors := command.MustHandle(ctx, bus, MakeNonUniqueCommand, func(ctx command.Ctx[makeNonUniquePayload]) error {
 		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
@@ -153,7 +153,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	tagErrors := command.MustHandle(ctx, bus, TagCommand, func(ctx command.ContextOf[tagPayload]) error {
+	tagErrors := command.MustHandle(ctx, bus, TagCommand, func(ctx command.Ctx[tagPayload]) error {
 		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {
@@ -162,7 +162,7 @@ func HandleCommands(ctx context.Context, bus command.Bus, shelfs Repository, sto
 		})
 	})
 
-	untagErrors := command.MustHandle(ctx, bus, UntagCommand, func(ctx command.ContextOf[untagPayload]) error {
+	untagErrors := command.MustHandle(ctx, bus, UntagCommand, func(ctx command.Ctx[untagPayload]) error {
 		load := ctx.Payload()
 
 		return shelfs.Use(ctx, ctx.AggregateID(), func(s *Shelf) error {

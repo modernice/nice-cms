@@ -261,6 +261,8 @@ github.com/modernice/goes v0.1.1-0.20220214170015-b2736a35ed61 h1:xD/Fh1POGJ7DK7
 github.com/modernice/goes v0.1.1-0.20220214170015-b2736a35ed61/go.mod h1:R3WvFah9dwOyjxZdpGR9sL+NMsqwcmZucuwLFx7gSzs=
 github.com/modernice/goes v0.1.1-0.20220216014654-cdf46e48b333 h1:1LKhqAyEUcPFeJ4vpPk/GxkQ8wslwLPa889Zh+dMg0k=
 github.com/modernice/goes v0.1.1-0.20220216014654-cdf46e48b333/go.mod h1:R3WvFah9dwOyjxZdpGR9sL+NMsqwcmZucuwLFx7gSzs=
+github.com/modernice/goes v0.1.1-0.20220223191147-1a5b1c66a1a8 h1:bwaadV3IehWCmv+LffPUnRJXX+gVm9w3B/NGECXHrdw=
+github.com/modernice/goes v0.1.1-0.20220223191147-1a5b1c66a1a8/go.mod h1:R3WvFah9dwOyjxZdpGR9sL+NMsqwcmZucuwLFx7gSzs=
 github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
 github.com/nats-io/jwt v0.3.2/go.mod h1:/euKqTS1ZD+zzjYrY7pseZrTtWQSjujC7xjPc8wL6eU=
 github.com/nats-io/jwt v1.1.0/go.mod h1:n3cvmLfBfnpV4JJRN7lRYCyZnw48ksGsbThGXEk4w9M=

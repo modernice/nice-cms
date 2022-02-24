@@ -36,7 +36,7 @@ func RegisterCommands(r *codec.GobRegistry) {
 // HandleCommands handles navigation commands until ctx is canceled. The
 // returned error channel is also closed when ctx is canceled.
 func HandleCommands(ctx context.Context, bus command.Bus, repo Repository, lookup *Lookup) <-chan error {
-	errs := command.MustHandle(ctx, bus, CreateCommand, func(ctx command.ContextOf[createPayload]) error {
+	errs := command.MustHandle(ctx, bus, CreateCommand, func(ctx command.Ctx[createPayload]) error {
 		load := ctx.Payload()
 
 		if _, ok := lookup.Name(load.Name); ok {
