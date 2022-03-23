@@ -475,9 +475,9 @@ func (svc *PostProcessor) accept(
 			id, _, _ := evt.Aggregate()
 			switch data := evt.Data().(type) {
 			case ImageUploadedData:
-				enqueue(ctx, queue, id, data.Stack.ID)
+				go enqueue(ctx, queue, id, data.Stack.ID)
 			case ImageReplacedData:
-				enqueue(ctx, queue, id, data.Stack.ID)
+				go enqueue(ctx, queue, id, data.Stack.ID)
 			}
 		},
 		fail,
