@@ -33,11 +33,7 @@ type Resizer map[string]Dimensions
 //	// resized["small"].Bounds().Dx() == 640
 //	// resized["medium"].Bounds().Dx() == 1280
 //	// resized["large"].Bounds().Dx() == 1920
-func (r *Resizer) Resize(img image.Image) map[string]image.Image {
-	if r == nil {
-		*r = make(Resizer)
-	}
-
+func (r Resizer) Resize(img image.Image) map[string]image.Image {
 	type result struct {
 		name string
 		img  *image.NRGBA
@@ -46,7 +42,7 @@ func (r *Resizer) Resize(img image.Image) map[string]image.Image {
 	results := make(chan result)
 
 	var wg sync.WaitGroup
-	for name, d := range *r {
+	for name, d := range r {
 		wg.Add(1)
 		go func(name string, d Dimensions) {
 			defer wg.Done()
