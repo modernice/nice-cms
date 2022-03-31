@@ -6,6 +6,7 @@ import (
 	"fmt"
 	stdimage "image"
 	"io"
+	"math"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -201,13 +202,54 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 	})
 
 	if err := ctx.Update(func(s Stack) Stack {
-		s.Images = append(s.Images, resizedImages...)
+		s.Images = appendOrReplaceResizedImage(s.Images, resizedImages)
 		return s
 	}); err != nil {
 		return fmt.Errorf("update Stack: %w", err)
 	}
 
 	return nil
+}
+
+func appendOrReplaceResizedImage(images, resizedImages []Image) []Image {
+	max := int(math.Max(float64(len(images)), float64(len(resizedImages)+1)))
+	out := make([]Image, 0, max)
+
+	// Append all resized images.
+	out = append(out, resizedImages...)
+
+	// Append previous, non-resized images.
+L:
+	for _, img := range images {
+		// Always keep the original.
+		if img.Original {
+			out = append(out, img)
+			continue
+		}
+
+		for _, resized := range resizedImages {
+			if resized.Size == img.Size {
+				// Replaced by resized image.
+				continue L
+			}
+		}
+
+		out = append(out, img)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Original {
+			return true
+		}
+
+		if out[j].Original {
+			return false
+		}
+
+		return out[i].Width <= out[j].Width
+	})
+
+	return out
 }
 
 func (r Resizer) path(orgPath, size, format string) string {
