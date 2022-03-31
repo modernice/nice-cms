@@ -536,6 +536,20 @@ func (s Stack) WithoutTag(tags ...string) Stack {
 	return s
 }
 
+// Sizes returns all sizes of the image.
+func (s Stack) Sizes() []string {
+	out := make([]string, 0, len(s.Images))
+	found := make(map[string]struct{})
+	for _, img := range s.Images {
+		if _, ok := found[img.Size]; ok {
+			continue
+		}
+		out = append(out, img.Size)
+		found[img.Size] = struct{}{}
+	}
+	return out
+}
+
 func (s Stack) copy() Stack {
 	images := make([]Image, len(s.Images))
 	copy(images, s.Images)

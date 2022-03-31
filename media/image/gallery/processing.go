@@ -159,7 +159,7 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 		return fmt.Errorf("download original image %q (%s): %w", org.Path, org.Disk, err)
 	}
 
-	resizer := (image.Resizer)(r)
+	resizer := resizerWithoutSizes((image.Resizer)(r), s.Sizes())
 
 	ctx.cfg.logf("[Resizer] Resize image (StackID=%v Sizes=%v)", s.ID, resizer)
 	start := time.Now()
@@ -209,6 +209,20 @@ func (r Resizer) Process(ctx *ProcessorContext) error {
 	}
 
 	return nil
+}
+
+func resizerWithoutSizes(r image.Resizer, sizes []string) image.Resizer {
+	out := make(image.Resizer, len(r))
+L:
+	for size, dimensions := range r {
+		for _, removeSize := range sizes {
+			if size == removeSize {
+				continue L
+			}
+		}
+		out[size] = dimensions
+	}
+	return out
 }
 
 func appendOrReplaceResizedImage(images, resizedImages []Image) []Image {
