@@ -97,14 +97,14 @@ func Sort(galleryID uuid.UUID, sorting []uuid.UUID) command.Cmd[sortPayload] {
 }
 
 // RegisterCommands register the gallery commands into a command registry.
-func RegisterCommands(r *codec.GobRegistry) {
-	codec.GobRegister[createPayload](r, CreateCommand)
-	codec.GobRegister[deleteStackPayload](r, DeleteStackCommand)
-	codec.GobRegister[tagStackPayload](r, TagStackCommand)
-	codec.GobRegister[untagStackPayload](r, UntagStackCommand)
-	codec.GobRegister[renameStackPayload](r, RenameStackCommand)
-	codec.GobRegister[updateStackPayload](r, UpdateStackCommand)
-	codec.GobRegister[sortPayload](r, SortCommand)
+func RegisterCommands(r codec.Registerer) {
+	codec.Register[createPayload](r, CreateCommand)
+	codec.Register[deleteStackPayload](r, DeleteStackCommand)
+	codec.Register[tagStackPayload](r, TagStackCommand)
+	codec.Register[untagStackPayload](r, UntagStackCommand)
+	codec.Register[renameStackPayload](r, RenameStackCommand)
+	codec.Register[updateStackPayload](r, UpdateStackCommand)
+	codec.Register[sortPayload](r, SortCommand)
 }
 
 // HandleCommands handles commands until ctx is canceled.

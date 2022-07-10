@@ -14,7 +14,7 @@ import (
 
 // Goes returns helper functions that return goes components for testing.
 func Goes() (
-	func() (event.Bus, event.Store, *codec.GobRegistry),
+	func() (event.Bus, event.Store, codec.Registerer),
 	func() (command.Bus, *codec.Registry),
 	func() aggregate.Repository,
 ) {
@@ -23,11 +23,11 @@ func Goes() (
 	estore := eventstore.WithBus(eventstore.New(), ebus)
 
 	creg := codec.New()
-	cbus := cmdbus.New(ereg.Registry, ebus)
+	cbus := cmdbus.New(creg, ebus)
 
 	repo := repository.New(estore)
 
-	return func() (event.Bus, event.Store, *codec.GobRegistry) {
+	return func() (event.Bus, event.Store, codec.Registerer) {
 			return ebus, estore, ereg
 		}, func() (command.Bus, *codec.Registry) {
 			return cbus, creg

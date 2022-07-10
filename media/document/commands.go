@@ -98,14 +98,14 @@ func Untag(shelfID, documentID uuid.UUID, tags []string) command.Cmd[untagPayloa
 }
 
 // RegisterCommand registers document commands.
-func RegisterCommands(r *codec.GobRegistry) {
-	codec.GobRegister[createShelfPayload](r, CreateShelfCommand)
-	codec.GobRegister[removePayload](r, RemoveCommand)
-	codec.GobRegister[renamePayload](r, RenameCommand)
-	codec.GobRegister[makeUniquePayload](r, MakeUniqueCommand)
-	codec.GobRegister[makeNonUniquePayload](r, MakeNonUniqueCommand)
-	codec.GobRegister[tagPayload](r, TagCommand)
-	codec.GobRegister[untagPayload](r, UntagCommand)
+func RegisterCommands(r codec.Registerer) {
+	codec.Register[createShelfPayload](r, CreateShelfCommand)
+	codec.Register[removePayload](r, RemoveCommand)
+	codec.Register[renamePayload](r, RenameCommand)
+	codec.Register[makeUniquePayload](r, MakeUniqueCommand)
+	codec.Register[makeNonUniquePayload](r, MakeNonUniqueCommand)
+	codec.Register[tagPayload](r, TagCommand)
+	codec.Register[untagPayload](r, UntagCommand)
 }
 
 // HandleCommand handles commands until ctx is canceled.

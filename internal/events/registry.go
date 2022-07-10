@@ -9,16 +9,16 @@ import (
 )
 
 // NewRegistry returns a new event registry with all events registered.
-func NewRegistry() *codec.GobRegistry {
-	r := codec.Gob(codec.New())
+func NewRegistry() codec.Registerer {
+	r := codec.New()
 	Register(r)
 	return r
 }
 
 // Register registers all events into the event registry.
-func Register(r *codec.GobRegistry) {
+func Register(r codec.Registerer) {
 	nav.RegisterEvents(r)
 	document.RegisterEvents(r)
 	gallery.RegisterEvents(r)
-	cmdbus.RegisterEvents(r.Registry)
+	cmdbus.RegisterEvents(r)
 }

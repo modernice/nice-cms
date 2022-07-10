@@ -29,8 +29,8 @@ func CreateCmd(name string, items ...Item) command.Cmd[createPayload] {
 }
 
 // RegisterCommands register commands into a registry.
-func RegisterCommands(r *codec.GobRegistry) {
-	codec.GobRegister[createPayload](r, CreateCommand)
+func RegisterCommands(r codec.Registerer) {
+	codec.Register[createPayload](r, CreateCommand)
 }
 
 // HandleCommands handles navigation commands until ctx is canceled. The

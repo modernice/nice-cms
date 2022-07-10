@@ -8,14 +8,14 @@ import (
 )
 
 // NewRegistry returns a new command registry with all commands registered.
-func NewRegistry() *codec.GobRegistry {
-	r := codec.Gob(codec.New())
+func NewRegistry() *codec.Registry {
+	r := codec.New()
 	Register(r)
 	return r
 }
 
 // Register registers all commands into the registry.
-func Register(r *codec.GobRegistry) {
+func Register(r codec.Registerer) {
 	nav.RegisterCommands(r)
 	document.RegisterCommands(r)
 	gallery.RegisterCommands(r)

@@ -57,14 +57,14 @@ type SortedData struct {
 	Sorting []uuid.UUID
 }
 
-func RegisterEvents(r *codec.GobRegistry) {
-	r.GobRegister(Created, func() any { return CreatedData{} })
-	r.GobRegister(ImageUploaded, func() any { return ImageUploadedData{} })
-	r.GobRegister(ImageReplaced, func() any { return ImageReplacedData{} })
-	r.GobRegister(StackDeleted, func() any { return StackDeletedData{} })
-	r.GobRegister(StackTagged, func() any { return StackTaggedData{} })
-	r.GobRegister(StackUntagged, func() any { return StackUntaggedData{} })
-	r.GobRegister(StackRenamed, func() any { return StackRenamedData{} })
-	r.GobRegister(StackUpdated, func() any { return StackUpdatedData{} })
-	r.GobRegister(Sorted, func() any { return SortedData{} })
+func RegisterEvents(r codec.Registerer) {
+	codec.Register[CreatedData](r, Created)
+	codec.Register[ImageUploadedData](r, ImageUploaded)
+	codec.Register[ImageReplacedData](r, ImageReplaced)
+	codec.Register[StackDeletedData](r, StackDeleted)
+	codec.Register[StackTaggedData](r, StackTagged)
+	codec.Register[StackUntaggedData](r, StackUntagged)
+	codec.Register[StackRenamedData](r, StackRenamed)
+	codec.Register[StackUpdatedData](r, StackUpdated)
+	codec.Register[SortedData](r, Sorted)
 }

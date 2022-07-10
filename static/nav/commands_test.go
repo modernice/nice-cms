@@ -26,7 +26,7 @@ func TestCreateCmd(t *testing.T) {
 	ebus := eventbus.New()
 	estore := eventstore.WithBus(eventstore.New(), ebus)
 	creg := commands.NewRegistry()
-	cbus := cmdbus.New(creg.Registry, ebus)
+	cbus := cmdbus.New(creg, ebus)
 
 	repo := nav.GoesRepository(repository.New(estore))
 	lookup, errs := newLookup(t, ctx, ebus, estore)
@@ -69,7 +69,7 @@ func TestCreateCmd_duplicateName(t *testing.T) {
 	creg := commands.NewRegistry()
 	ebus := eventbus.New()
 	estore := eventstore.WithBus(eventstore.New(), ebus)
-	cbus := cmdbus.New(creg.Registry, ebus)
+	cbus := cmdbus.New(creg, ebus)
 
 	repo := nav.GoesRepository(repository.New(estore))
 	lookup, errs := newLookup(t, ctx, ebus, estore)

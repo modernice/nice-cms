@@ -71,14 +71,14 @@ type DocumentUntaggedData struct {
 }
 
 // RegisterEvents registers Shelf events into an event registry.
-func RegisterEvents(r *codec.GobRegistry) {
-	r.GobRegister(ShelfCreated, func() any { return ShelfCreatedData{} })
-	r.GobRegister(DocumentAdded, func() any { return DocumentAddedData{} })
-	r.GobRegister(DocumentReplaced, func() any { return DocumentReplacedData{} })
-	r.GobRegister(DocumentRemoved, func() any { return DocumentRemovedData{} })
-	r.GobRegister(DocumentRenamed, func() any { return DocumentRenamedData{} })
-	r.GobRegister(DocumentMadeUnique, func() any { return DocumentMadeUniqueData{} })
-	r.GobRegister(DocumentMadeNonUnique, func() any { return DocumentMadeNonUniqueData{} })
-	r.GobRegister(DocumentTagged, func() any { return DocumentTaggedData{} })
-	r.GobRegister(DocumentUntagged, func() any { return DocumentUntaggedData{} })
+func RegisterEvents(r codec.Registerer) {
+	codec.Register[ShelfCreatedData](r, ShelfCreated)
+	codec.Register[DocumentAddedData](r, DocumentAdded)
+	codec.Register[DocumentReplacedData](r, DocumentReplaced)
+	codec.Register[DocumentRemovedData](r, DocumentRemoved)
+	codec.Register[DocumentRenamedData](r, DocumentRenamed)
+	codec.Register[DocumentMadeUniqueData](r, DocumentMadeUnique)
+	codec.Register[DocumentMadeNonUniqueData](r, DocumentMadeNonUnique)
+	codec.Register[DocumentTaggedData](r, DocumentTagged)
+	codec.Register[DocumentUntaggedData](r, DocumentUntagged)
 }
